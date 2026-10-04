@@ -240,6 +240,7 @@ def table():
                  f"[{lo}, {hi}]{label}", f"{max(abs(lo),abs(hi))/q:.6f}q")
         lines.append("| " + " | ".join(c.replace("|", r"\|") for c in cells) + " |")
     print(f"PASS: table covers all {len(SPECS)} ARM CONGBOUND proofs at {PIN[:12]}; x86 NOT RUN")
+    print("q = 3329 for ML-KEM; q = 8380417 for ML-DSA. Ratios are rounded to six decimal places.")
     print("| Function | Input assumption (and /q) | Spec output (and /q) | Proof-derived interval | max abs /q |")
     print("|---|---|---|---|---|")
     print("\n".join(lines))

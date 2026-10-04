@@ -58,6 +58,11 @@ proofs do not call CONGBOUND. The table is measured at the pin; applicability to
 upstream will be assessed against these source changes, not claimed as an upstream
 replay. x86 is explicitly not run until a suitable profile is available.
 
+The inverse-NTT contracts differ: ARM requires `abs(z) <= 26624` (`8q-8`),
+whereas x86 requires `abs(z) <= 26631` (equivalently `<26632`, or `<8q`). Both permit arbitrary signed
+16-bit inputs. The table preserves those distinct contracts; an ARM result
+does not establish the x86 bound or removal question.
+
 The reduction investigation starts with the x86 difference raised in #321.
 The [pq-crystals AVX2 inverse NTT](https://github.com/pq-crystals/kyber/blob/main/avx2/invntt.S)
 reduces after levels 2 and 4. This revision of s2n-bignum also reduces after
