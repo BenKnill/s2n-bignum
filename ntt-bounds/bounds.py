@@ -122,15 +122,62 @@ def collect(hearth, run_root, name):
     if info["source_sha256"] != hashlib.sha256(entry_source(name).encode()).hexdigest():
         raise ValueError(f"{name}: receipt belongs to a different source")
     receipt = Path(info["receipt"])
+    check_observer_identity(json.loads(receipt.read_text()))
     raw = receipt.with_name("transcript.log.raw").read_text()
     count, lo, hi = read_result(raw, name)
     return dict(name=name, count=count, lower=lo, upper=hi,
                 fingerprint=fingerprint(name), receipt=str(receipt))
 
 
+def check_observer_identity(receipt):
+    expected = hashlib.sha256((HERE / "tap.ml").read_bytes()).hexdigest()
+    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
+                if item["package_path"] == "ntt-bounds/tap.ml"]
+    if recorded != [expected]:
+        raise ValueError("receipt does not capture the current CONGBOUND observer")
+
+
+def reduction_values(raw):
+    lines = [line for line in raw.splitlines(keepends=True)
+             if line.startswith("NTT_REDUCTION_RESULT ")]
+    match = (re.fullmatch(r"NTT_REDUCTION_RESULT late-v21 64 (-?\d+) (-?\d+) 26624\n", lines[0])
+             if len(lines) == 1 else None)
+    if not match or int(match[1]) > int(match[2]):
+        raise ValueError("missing, malformed or duplicate inverse-NTT reduction result")
+    return int(match[1]), int(match[2])
+
+
+def reduction(args):
+    check_sources()
+    info = json.loads(run([args.hearth, "inspect", str(args.run_root / "intt-reduction"), "--json"],
+                          capture_output=True).stdout)
+    if info["verdict"] != "passed" or info["new_axioms"] != 0:
+        raise ValueError("reduction calculation was not accepted with 0 new axioms")
+    source = HERE / "intt_reduction.ml"
+    if info["source_sha256"] != hashlib.sha256(source.read_bytes()).hexdigest():
+        raise ValueError("reduction receipt belongs to a different leaf")
+    receipt = Path(info["receipt"])
+    record = json.loads(receipt.read_text())
+    check_observer_identity(record)
+    graph = [f["sha256"] for f in record["dependency_package_files"]
+             if f["package_path"] == "ntt-bounds/generated/mlkem_intt.ml"]
+    if graph != [hashlib.sha256(instrument("mlkem_intt").encode()).hexdigest()]:
+        raise ValueError("reduction receipt does not capture the current inverse-NTT graph")
+    lo, hi = reduction_values(receipt.with_name("transcript.log.raw").read_text())
+    bound = max(abs(lo), abs(hi))
+    if bound <= 26624:
+        raise ValueError(f"candidate bound {bound} fits 26624: assembly proof and M5 timing still needed")
+    print(f"PASS: interval refutation: removing late v21 Barrett gives {bound} > spec 26624")
+    print("| Candidate | Removed scalar reductions | CONGBOUND interval | max abs / q | Spec |")
+    print("|---|---|---|---|---|")
+    print(f"| ARM mlkem_intt late v21 Barrett | 64 | [{lo}, {hi}] | {bound / 3329:.6f}q | <=26624 ({26624 / 3329:.6f}q) |")
+    print(f"Receipt: {receipt}")
+    print("This rejects this interval proof of the removal; it is not an attainable counterexample.")
+
+
 def save_results(saved):
     with (HERE / "results.tsv").open("w") as f:
-        writer = csv.DictWriter(f, delimiter="\t", fieldnames=[
+        writer = csv.DictWriter(f, delimiter="\t", lineterminator="\n", fieldnames=[
             "name", "count", "lower", "upper", "fingerprint", "receipt"])
         writer.writeheader()
         writer.writerows(saved[n] for n in sorted(saved))
@@ -204,9 +251,10 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("table")
     sub.add_parser("generate")
-    for command in ("replay", "collect"):
+    for command in ("replay", "collect", "reduction"):
         p = sub.add_parser(command)
-        p.add_argument("names", nargs="*" if command == "replay" else "+")
+        if command != "reduction":
+            p.add_argument("names", nargs="*" if command == "replay" else "+")
         p.add_argument("--hearth", default=os.environ.get("HEARTH", "hearth"))
         p.add_argument("--run-root", type=Path, required=True)
         p.add_argument("--timeout", type=int, default=7200)
@@ -214,7 +262,7 @@ def main():
     try:
         if hasattr(args, "run_root"):
             args.run_root = args.run_root.resolve()
-            unknown = set(args.names) - SPECS.keys()
+            unknown = set(getattr(args, "names", [])) - SPECS.keys()
             if unknown:
                 raise ValueError("unknown functions: " + ", ".join(sorted(unknown)))
         if args.command == "table":
@@ -223,6 +271,8 @@ def main():
             generate(sorted(SPECS))
         elif args.command == "collect":
             collect_results(args)
+        elif args.command == "reduction":
+            reduction(args)
         else:
             replay(args)
     except (ValueError, OSError, subprocess.CalledProcessError, KeyError) as exc:

@@ -36,8 +36,10 @@ if length ntt_intt_removed <> 64 then
 let ntt_intt_without_late_barrett =
   itlist (fun th lfn ->
     let bod,var = dest_eq(concl th) in
-    let eq = if ntt_intt_is_late_barred bod
-             then ASSUME(mk_eq(rand bod,var)) else th in
+    (* Treat the whole changed graph as explicit equations. Do not carry
+       any simulation hypotheses from the original machine execution. *)
+    let newbod = if ntt_intt_is_late_barred bod then rand bod else bod in
+    let eq = ASSUME(mk_eq(newbod,var)) in
     let cb = ntt_bounds_original_rule lfn (lhand(concl eq)) in
     (var |-> SUBS[eq] cb) lfn)
     (rev ntt_intt_asms) undefined;;

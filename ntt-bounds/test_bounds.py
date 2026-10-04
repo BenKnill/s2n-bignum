@@ -1,5 +1,6 @@
 import unittest
 import json
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -36,6 +37,22 @@ class ExtractionChecks(unittest.TestCase):
             with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
                 with self.subTest(info=info), self.assertRaises(ValueError):
                     bounds.collect("hearth", Path("unused"), "mlkem_tomont")
+
+    def test_receipt_must_capture_current_observer(self):
+        item = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
+            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
+        bounds.check_observer_identity(dict(dependency_package_files=[item]))
+        for files in ([], [item, item], [dict(item, sha256="old-observer")]):
+            with self.subTest(files=files), self.assertRaises(ValueError):
+                bounds.check_observer_identity(dict(dependency_package_files=files))
+
+    def test_reduction_result_rejects_incomplete_or_wrong_graph_count(self):
+        text = "NTT_REDUCTION_RESULT late-v21 64 -27000 27000 26624\n"
+        self.assertEqual(bounds.reduction_values(text), (-27000, 27000))
+        for bad in ("", text[:-1], text * 2, text.replace("64 -", "32 -"),
+                    text.replace("26624", "26632"), text.replace("-27000 27000", "2 1")):
+            with self.subTest(text=bad), self.assertRaises(ValueError):
+                bounds.reduction_values(bad)
 
 
 if __name__ == "__main__":

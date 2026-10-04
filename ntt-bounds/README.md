@@ -72,6 +72,10 @@ inverse-NTT basis, requiring exactly 64 matching coefficient occurrences. It
 does not introduce an axiom: changed local equations are explicit hypotheses.
 Its result must be interpreted as a bound-propagation test, not an unchanged-spec
 machine proof or an attainable counterexample. At present this leaf is unvalidated.
+`make -C ntt-bounds analyze-reduction HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
+runs that leaf over the inverse-NTT basis. `make -C ntt-bounds reduction` reads its
+accepted receipt and prints the refutation row; a bound that fits the spec fails
+this refutation gate and requires the assembly proof and M5 timing route instead.
 
 For durable lane execution, the inverse-NTT basis can be prepared directly with
 `lane-run UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
