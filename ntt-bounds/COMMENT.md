@@ -1,4 +1,4 @@
-Draft: nine ARM results and the reduction calculation are pending.
+Draft: five ARM results and the reduction calculation are pending.
 
 At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 to pass with zero new axioms. These are interval bounds, not attainable extrema.
@@ -12,16 +12,16 @@ relationships still apply.
 | Function | Input | Spec | Derived |
 |---|---|---|---|
 | mlkem_basemul_k2 | x:4096(1.2304q);y,y′:S | S | 9857(2.9609q) |
-| mlkem_basemul_k3 | x:4096(1.2304q);y,y′:S | S | PENDING |
-| mlkem_basemul_k4 | x:4096(1.2304q);y,y′:S | S | PENDING |
-| mlkem_intt | S | 26624(7.9976q) | PENDING |
+| mlkem_basemul_k3 | x:4096(1.2304q);y,y′:S | S | 13953(4.1913q) |
+| mlkem_basemul_k4 | x:4096(1.2304q);y,y′:S | S | 18049(5.4217q) |
+| mlkem_intt | S | 26624(7.9976q) | 26624(7.9976q) |
 | mlkem_mulcache_compute | S | 3328(0.9997q) | 3292(0.9889q) |
 | mlkem_ntt | 8191(2.4605q) | 23594(7.0874q) | 23594(7.0874q) |
 | mlkem_reduce | S | [0,3328](0.9997q) | [0,3328](0.9997q) |
 | mlkem_tomont | S | 3328(0.9997q) | 2653(0.7969q) |
 | mldsa_intt | q−1 | q−1 | PENDING |
 | mldsa_ntt | q−1 | 9q−1 | PENDING |
-| mldsa_pointwise | x,y:9q−1 | q−1 | PENDING |
+| mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 | mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | PENDING |
 | mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | PENDING |
 | mldsa_pointwise_acc_l7 | x:q−1;y:9q−1 | q−1 | PENDING |
