@@ -9,11 +9,11 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COMMENT.md b/ntt-bounds/COMMENT.md
 new file mode 100644
-index 00000000..bcb955f6
+index 00000000..76245d8a
 --- /dev/null
 +++ b/ntt-bounds/COMMENT.md
 @@ -0,0 +1,39 @@
-+Draft: four ARM results are pending.
++Draft: three ARM results are pending.
 +
 +At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 +to pass with zero new axioms. These are interval bounds, not attainable extrema.
@@ -38,7 +38,7 @@ index 00000000..bcb955f6
 +| mldsa_ntt | q−1 | 9q−1 | PENDING |
 +| mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 +| mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
-+| mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | PENDING |
++| mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | 4926050(0.5878q) |
 +| mldsa_pointwise_acc_l7 | x:q−1;y:9q−1 | q−1 | PENDING |
 +
 +The reducer's observed centered intermediate is [−1664,1664]; its exact-remainder
@@ -727,13 +727,14 @@ index 00000000..32a2c172
 +  string_of_num ntt_intt_alternative_upper ^ " 26624");;
 diff --git a/ntt-bounds/results.tsv b/ntt-bounds/results.tsv
 new file mode 100644
-index 00000000..8f20c46c
+index 00000000..b711928a
 --- /dev/null
 +++ b/ntt-bounds/results.tsv
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +name	count	lower	upper	fingerprint	receipt
 +mldsa_pointwise	256	-5514723	5514723	fcc776aba54ca52c8477b9c379bd782fd9fa9015235972e8e119d9627d4f2f41	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise/20261005T042120Z-390597-mldsa_pointwise-861f0b/transcript.log.json
 +mldsa_pointwise_acc_l4	256	-4778882	4778882	34ae58fdd33e459cc6f280a3c3aef158915f83edfcf7b9da1c381f862ffe91b9	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l4/20261005T043357Z-394299-mldsa_pointwise_acc_l4-9119a0/transcript.log.json
++mldsa_pointwise_acc_l5	256	-4926050	4926050	5fdc0a708dbb539e2b6f3c317ba4bffa3d5b20572b5e7b434a1af4e629e30593	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l5/20261005T055258Z-482956-mldsa_pointwise_acc_l5-9de9a9/transcript.log.json
 +mlkem_basemul_k2	256	-9857	9857	ab253342ca3fe096d65dd98830731434e944cbb1cc7185927eadc1bd0efbdd9c	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k2/20261005T010601Z-268181-mlkem_basemul_k2-7d6936/transcript.log.json
 +mlkem_basemul_k3	256	-13953	13953	589eae01d3d26f342311d7d89bc3496270575dc8e74911e8ed7daab780156c3f	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k3/20261005T015959Z-314741-mlkem_basemul_k3-c7d89e/transcript.log.json
 +mlkem_basemul_k4	256	-18049	18049	b4df2304854e1ecc38eeaaf2cf3f0850e3b713b64ef7ec1e39a36e26c3f9ee09	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k4/20261005T033109Z-375368-mlkem_basemul_k4-d82efd/transcript.log.json

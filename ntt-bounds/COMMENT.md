@@ -1,4 +1,4 @@
-Draft: four ARM results are pending.
+Draft: three ARM results are pending.
 
 At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 to pass with zero new axioms. These are interval bounds, not attainable extrema.
@@ -23,7 +23,7 @@ relationships still apply.
 | mldsa_ntt | q−1 | 9q−1 | PENDING |
 | mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 | mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
-| mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | PENDING |
+| mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | 4926050(0.5878q) |
 | mldsa_pointwise_acc_l7 | x:q−1;y:9q−1 | q−1 | PENDING |
 
 The reducer's observed centered intermediate is [−1664,1664]; its exact-remainder
