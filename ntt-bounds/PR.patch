@@ -1,0 +1,1098 @@
+diff --git a/ntt-bounds/.gitignore b/ntt-bounds/.gitignore
+new file mode 100644
+index 00000000..30869572
+--- /dev/null
++++ b/ntt-bounds/.gitignore
+@@ -0,0 +1,3 @@
++.venv/
++generated/
++__pycache__/
+diff --git a/ntt-bounds/COMMENT.md b/ntt-bounds/COMMENT.md
+new file mode 100644
+index 00000000..bcb955f6
+--- /dev/null
++++ b/ntt-bounds/COMMENT.md
+@@ -0,0 +1,39 @@
++Draft: four ARM results are pending.
++
++At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
++to pass with zero new axioms. These are interval bounds, not attainable extrema.
++`make -C ntt-bounds table` checks coverage and prints the full table.
++
++Here q=3329 for ML-KEM and q=8380417 for ML-DSA. Entries are absolute upper
++bounds unless shown as intervals. S=[−32768,32767]=[−9.8432q,9.8429q] denotes
++the signed-16-bit type. Decimal ratios are rounded. Original memory and cache
++relationships still apply.
++
++| Function | Input | Spec | Derived |
++|---|---|---|---|
++| mlkem_basemul_k2 | x:4096(1.2304q);y,y′:S | S | 9857(2.9609q) |
++| mlkem_basemul_k3 | x:4096(1.2304q);y,y′:S | S | 13953(4.1913q) |
++| mlkem_basemul_k4 | x:4096(1.2304q);y,y′:S | S | 18049(5.4217q) |
++| mlkem_intt | S | 26624(7.9976q) | 26624(7.9976q) |
++| mlkem_mulcache_compute | S | 3328(0.9997q) | 3292(0.9889q) |
++| mlkem_ntt | 8191(2.4605q) | 23594(7.0874q) | 23594(7.0874q) |
++| mlkem_reduce | S | [0,3328](0.9997q) | [0,3328](0.9997q) |
++| mlkem_tomont | S | 3328(0.9997q) | 2653(0.7969q) |
++| mldsa_intt | q−1 | q−1 | PENDING |
++| mldsa_ntt | q−1 | 9q−1 | PENDING |
++| mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
++| mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
++| mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | PENDING |
++| mldsa_pointwise_acc_l7 | x:q−1;y:9q−1 | q−1 | PENDING |
++
++The reducer's observed centered intermediate is [−1664,1664]; its exact-remainder
++postcondition gives the canonical result above.
++
++Removing 64 late-v21 Barrett reductions gives interval S: max=32768(9.8432q)
++exceeds spec 26624(7.9976q). Four signed-word side conditions fail, requiring
++type-bound widening. This refutes the existing interval argument, not an
++attainable counterexample. The calculation passed with zero new axioms.
++
++x86 was not run; #321 reports 14939. Its inverse-NTT contract is <8q, versus
++ARM's ≤8q−8. At upstream `4d1356a7`, unchanged contracts and numeric rules suggest
++the same intervals; this is source comparison, not an upstream replay.
+diff --git a/ntt-bounds/Makefile b/ntt-bounds/Makefile
+new file mode 100644
+index 00000000..f5472559
+--- /dev/null
++++ b/ntt-bounds/Makefile
+@@ -0,0 +1,20 @@
++PYTHON ?= .venv/bin/python
++HEARTH ?= hearth
++RUN_ROOT ?= $(HOME)/lanes/ntt-bounds/runs
++
++.PHONY: table generate replay test check-linear reduction analyze-reduction
++table:
++	@$(PYTHON) bounds.py table
++generate:
++	@$(PYTHON) bounds.py generate $(if $(LINEAR),--linear,) $(FUNCTIONS)
++replay:
++	@$(PYTHON) bounds.py replay --hearth $(HEARTH) --run-root $(RUN_ROOT) $(if $(LINEAR),--linear,) $(FUNCTIONS)
++test:
++	@$(PYTHON) -m unittest -v test_bounds.py
++check-linear:
++	@$(HEARTH) prove check_linear.ml --profile light --timeout 120 --run-root $(RUN_ROOT)/linear-check
++reduction:
++	@$(PYTHON) bounds.py reduction --hearth $(HEARTH) --run-root $(RUN_ROOT)
++analyze-reduction:
++	@$(HEARTH) prove intt_reduction.ml --basis generated/mlkem_intt.ml --basis-cache-root $(RUN_ROOT) --profile s2n-arm-mlkem --timeout 7200 --run-root $(RUN_ROOT)/intt-reduction
++	@$(MAKE) reduction
+diff --git a/ntt-bounds/README.md b/ntt-bounds/README.md
+new file mode 100644
+index 00000000..95d11323
+--- /dev/null
++++ b/ntt-bounds/README.md
+@@ -0,0 +1,148 @@
++# ML-KEM / ML-DSA bound extraction
++
++This directory addresses [s2n-bignum #328](https://github.com/awslabs/s2n-bignum/issues/328)
++using the rule-observation method in [PR #321](https://github.com/awslabs/s2n-bignum/pull/321).
++The analysis revision is `fce78c7c17baee6a60511efe821930d4d049a6c0`, matching the
++Hearth `s2n-arm-mlkem` profile. All 14 ARM proofs that call the CONGBOUND family
++are covered, including the three base multiplications whose specs only state
++congruence and the reducer whose exact remainder result implies canonical bounds.
++
++`PR.patch` is the review copy of this directory's changes against the analysis
++revision. The comment marks any pending proofs; refresh the patch after new
++results are accepted. From the repository root:
++
++```sh
++git diff --binary fce78c7c17baee6a60511efe821930d4d049a6c0 -- ntt-bounds ':!ntt-bounds/PR.patch' > ntt-bounds/PR.patch
++git apply --reverse --check ntt-bounds/PR.patch
++```
++
++The second command checks that the exported patch matches the current files.
++Apply it to a checkout of the analysis revision with `git apply /path/to/PR.patch`.
++
++From the repository root, prepare a Python environment (standard library only):
++
++```sh
++uv venv --python 3.13.2 ntt-bounds/.venv
++make -C ntt-bounds test
++make -C ntt-bounds table
++```
++
++`table` prints saved, source-checked extraction results. It fails on missing or
++stale rows. To reproduce the results, configure an existing Hearth runtime with
++the matching profile, then run:
++
++```sh
++export HOL_WORKBENCH_RUNTIME_CONFIG=/path/to/runtime.toml
++make -C ntt-bounds replay HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs
++```
++
++This compiles the real ARM objects using the repository Makefile, generates
++instrumented copies in `generated/`, and checks each complete proof through
++Hearth. `FUNCTIONS='mlkem_tomont mlkem_reduce'` selects a subset for `replay` or
++`generate`. Accepted, unchanged rows are reused. Keep the Hearth run directories: each row
++records its receipt. On bluestar26, run long commands through
++`~/lanes/bin/lane-run --wait`, or use `~/lanes/bin/lane-wait UNIT` for an existing
++job; the K-backed native Linux filesystem is appropriate
++for runs and proof caches. No GitHub CI is needed.
++
++`tap.ml` shadows the public rule entrypoints after loading the real machinery.
++It records the exact lower/upper constants of the theorem that each proof feeds
++to its CONGBOUND split, then returns that same theorem. The original statements,
++recursive rule implementation, and local-bound propagation are intact. Default
++mode also preserves every original tactic; the optional linear mode below
++changes only the four NTT congruence finishing branches.
++The original complete proof must pass with zero new axioms before a row is saved.
++The expected number of output calls is checked; a malformed theorem or changed
++source is an error. Unit checks cover source preservation and malformed/incomplete
++result rejection. These are interval bounds, not claims of attainable extrema.
++
++For `mlkem_reduce`, CONGBOUND supplies the centered intermediate; the proof then
++conditionally adds q to obtain its exact `x rem q` result. The table reports
++the resulting canonical range and labels the observed intermediate explicitly.
++For other rows, CONGBOUND acts on the final output word.
++The input column lists coefficient bounds; memory separation, alignment, table
++constants and functional cache relationships remain as in the linked source specs.
++
++Upstream main inspected on 2026-10-04 is `4d1356a7470663c752660a59375dc3a9ef548428`.
++The four ARM NTT files change only the final congruence tactic (to
++`INT_LINEAR_CONG_TAC`) and its import. The other ten target proofs are unchanged.
++[The tactic change](https://github.com/awslabs/s2n-bignum/commit/f6c3644561e1cb1a594fef5d0dec35e4d7551081)
++avoids converting each expanded coefficient expression through real arithmetic;
++the range branches and theorem statements remain unchanged. This extraction
++uses the original pinned congruence tactic by default.
++The shared machinery factors recursion into `ASM_CONGBOUND_STEP` and adds a
++memoized variant, and factors the SIMD simplification helper without changing its
++ARM body; the numeric reduction lemmas are unchanged. Later ARM polynomial
++proofs do not call CONGBOUND. These changes preserve the bound expressions and
++numeric rules used by the 14 target proofs, so the same intervals are expected
++at that upstream revision. This is an inference from source comparison: the
++table is measured at the pin, without an upstream replay. x86 is explicitly not
++run until a suitable profile is available.
++
++`upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
++`f6c3644561e1cb1a594fef5d0dec35e4d7551081`. Enable this alternative finishing
++tactic with `make -C ntt-bounds replay LINEAR=1 HEARTH=/path/to/hearth
++RUN_ROOT=/path/to/runs`. `generate LINEAR=1 FUNCTIONS=mlkem_intt` prepares just the
++inverse-NTT variant for direct Hearth commands. This applies upstream's exact
++congruence-finisher replacement
++to the four NTT proofs, keeping the pinned statements and range branches.
++The collector verifies the helper hash for this mode, including the inverse-NTT
++basis dependency. Accepted rows from either mode are reused without regenerating
++their proofs; the table reports how many NTT rows use each tactic. The original
++and linear variants have distinct fingerprints.
++`make -C ntt-bounds check-linear HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
++checks its compatibility on two simple congruences, for q=3329 and q=8380417,
++using the light profile (2/2 bindings, zero new axioms in the local check).
++These auxiliary checks do not establish NTT correctness
++or any output bound; a complete function replay remains required.
++
++The inverse-NTT contracts differ: ARM requires `abs(z) <= 26624` (`8q-8`),
++whereas x86 requires `abs(z) <= 26631` (equivalently `<26632`, or `<8q`). Both permit arbitrary signed
++16-bit inputs. The table preserves those distinct contracts; an ARM result
++does not establish the x86 bound or removal question.
++
++The reduction investigation starts with the x86 difference raised in #321.
++The [pq-crystals AVX2 inverse NTT](https://github.com/pq-crystals/kyber/blob/main/avx2/invntt.S)
++reduces after levels 2 and 4. This revision of s2n-bignum also reduces after
++levels 3 and 5: `ymm10` at assembly lines 254–257 / 542–545, and `ymm7` at
++330–333 / 618–621. This source comparison identifies extra reductions; it is
++not an x86 proof or a claim that the ARM implementation uses the same algorithm.
++
++The ARM candidate is the late `v21` reduction at lines 193/203/211 in the
++loop, with the tail at 239/242/245. It reduces a sum of two `barmul` results.
++`intt_reduction.ml` will evaluate the changed expression graph over the completed
++inverse-NTT basis, requiring exactly 64 matching coefficient occurrences. It
++selects the final eight terms of each chronological group of 24 standalone
++reductions: Q29, Q9, then Q21. Earlier shuffled lanes can share the same operand
++shape, so a shape-only selector would include extra reductions. The two scratch
++registers in the loop (Q19/Q16) and the tail scratch register Q20 are overwritten
++before their next unrelated uses. There are seven loop blocks and one tail block;
++the candidate removes six static instructions and 24 dynamic instruction executions.
++The leaf also checks the selected terms' operand shape. It introduces no axiom:
++changed local equations are discharged into explicit implication premises.
++Its result must be interpreted as a bound-propagation test, not an unchanged-spec
++machine proof or an attainable counterexample.
++Addition and subtraction use the original CONGBOUND lemmas while their signed-word
++side conditions hold. If the kernel reduces such a condition to false, the leaf
++uses CONGBOUND_ATOM's signed-word interval at that node and continues. It reports
++the number of these broadened nodes. This preserves valid interval theorems through
++possible wraparound; it does not preserve the original polynomial congruence there.
++The local Hearth calculation passed in 45.9 seconds with zero new axioms. Four
++side conditions became false; the resulting output interval is [-32768,32767],
++with maximum absolute bound 32768 (9.843196q), exceeding the unchanged 26624
++(7.997597q) specification. This rejects the current interval argument for the
++removal, without asserting an attainable counterexample or a machine-code proof.
++`make -C ntt-bounds analyze-reduction HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
++runs that leaf over the inverse-NTT basis. `make -C ntt-bounds reduction` reads its
++accepted receipt and prints the refutation row; a bound that fits the spec fails
++this refutation gate and requires the assembly proof and M5 timing route instead.
++
++For durable lane execution, the inverse-NTT basis can be prepared directly with
++`lane-run --wait UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
++--basis ntt-bounds/generated/mlkem_intt.ml --basis-cache-root /path/to/runs
++--profile s2n-arm-mlkem --timeout 7200 --run-root /path/to/runs/mlkem_intt`.
++After it passes, `bounds.py collect mlkem_intt --hearth /path/to/hearth
++--run-root /path/to/runs` imports its accepted result. Use the same basis/cache
++for `intt_reduction.ml`, then retire this lane's basis with `hearth basis retire
++--all --cache-root /path/to/runs`. Do not replay an unchanged completed proof
++just to regenerate a status report.
+diff --git a/ntt-bounds/bounds.py b/ntt-bounds/bounds.py
+new file mode 100644
+index 00000000..ee809a41
+--- /dev/null
++++ b/ntt-bounds/bounds.py
+@@ -0,0 +1,341 @@
++#!/usr/bin/env python3
++"""Replay and tabulate the actual CONGBOUND theorems of the ARM proof suite."""
++import argparse
++import csv
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import subprocess
++import sys
++
++HERE = Path(__file__).resolve().parent
++ROOT = HERE.parent
++PIN = "fce78c7c17baee6a60511efe821930d4d049a6c0"
++NTT_NAMES = {"mlkem_ntt", "mlkem_intt", "mldsa_ntt", "mldsa_intt"}
++LINEAR_IMPORT = '\nneeds "ntt-bounds/upstream_int_linear.ml";;'
++ORIGINAL_FINISH = """      REWRITE_TAC[INT_REM_EQ] THEN
++      REWRITE_TAC[REAL_INT_CONGRUENCE; INT_OF_NUM_EQ; ARITH_EQ] THEN
++      REWRITE_TAC[GSYM REAL_OF_INT_CLAUSES] THEN
++      CONV_TAC(RAND_CONV REAL_POLY_CONV) THEN REAL_INTEGER_TAC;"""
++LINEAR_FINISH = "      REWRITE_TAC[INT_REM_EQ] THEN INT_LINEAR_CONG_TAC;"
++# name: number of output-rule calls, input contract, output contract
++# The canonical reduce result follows from its exact remainder postcondition;
++# its single CONGBOUND call is the centered intermediate, explicitly labelled.
++SPECS = {
++    "mlkem_basemul_k2": (256, "|x_j| <= 4096; -32768 <= y_j,y'_j <= 32767", "-32768 <= z <= 32767 (type only)"),
++    "mlkem_basemul_k3": (256, "|x_j| <= 4096; -32768 <= y_j,y'_j <= 32767", "-32768 <= z <= 32767 (type only)"),
++    "mlkem_basemul_k4": (256, "|x_j| <= 4096; -32768 <= y_j,y'_j <= 32767", "-32768 <= z <= 32767 (type only)"),
++    "mlkem_intt": (256, "-32768 <= x <= 32767 (type only)", "|z| <= 26624"),
++    "mlkem_mulcache_compute": (128, "-32768 <= x <= 32767 (type only)", "|z| <= 3328"),
++    "mlkem_ntt": (256, "|x| <= 8191", "|z| <= 23594"),
++    "mlkem_reduce": (1, "-32768 <= x <= 32767 (type only)", "z = x rem 3329: 0 <= z <= 3328"),
++    "mlkem_tomont": (256, "-32768 <= x <= 32767 (type only)", "|z| <= 3328"),
++    "mldsa_intt": (256, "|x| <= 8380416", "|z| <= 8380416"),
++    "mldsa_ntt": (256, "|x| <= 8380416", "|z| <= 75423752"),
++    "mldsa_pointwise": (256, "|x|,|y| <= 75423752", "|z| <= 8380416"),
++    "mldsa_pointwise_acc_l4": (256, "|x| <= 8380416; |y| <= 75423752", "|z| <= 8380416"),
++    "mldsa_pointwise_acc_l5": (256, "|x| <= 8380416; |y| <= 75423752", "|z| <= 8380416"),
++    "mldsa_pointwise_acc_l7": (256, "|x| <= 8380416; |y| <= 75423752", "|z| <= 8380416"),
++}
++
++
++def run(args, **kwargs):
++    return subprocess.run(args, check=True, text=True, **kwargs)
++
++
++def check_sources():
++    """Fail closed if a proof is added, removed, or any pinned dependency drifts."""
++    inventory = {p.stem for prefix in ("mlkem_", "mldsa_")
++                 for p in (ROOT / "arm/proofs").glob(prefix + "*.ml")
++                 if "CONGBOUND_RULE" in p.read_text()}
++    if inventory != SPECS.keys():
++        raise ValueError(f"CONGBOUND inventory changed: {inventory ^ SPECS.keys()}")
++    run(["git", "diff", "--exit-code", PIN, "--", "common", "arm/proofs",
++         "arm/mlkem", "arm/mldsa", "include"], cwd=ROOT, capture_output=True)
++
++
++def instrument(name, linear=False):
++    source = (ROOT / "arm/proofs" / (name + ".ml")).read_text()
++    marker = 'needs "common/mlkem_mldsa.ml";;'
++    if source.count(marker) != 1:
++        raise ValueError(f"{name}: shared machinery import changed")
++    # The observer shadows only the public rule entrypoints. Original mode
++    # preserves every tactic; linear mode changes only the finishing branch.
++    source = source.replace(marker, marker + '\nneeds "ntt-bounds/tap.ml";;')
++    if linear and name in NTT_NAMES:
++        if source.count(ORIGINAL_FINISH) != 1:
++            raise ValueError(f"{name}: congruence finishing branch changed")
++        source = source.replace(marker, marker + LINEAR_IMPORT)
++        source = source.replace(ORIGINAL_FINISH, LINEAR_FINISH)
++    return source + f'\nntt_bounds_finish "{name}" {SPECS[name][0]};;\n'
++
++
++def fingerprint(name, linear=False):
++    dependency = ((HERE / "upstream_int_linear.ml").read_text()
++                  if linear and name in NTT_NAMES else "")
++    return hashlib.sha256((PIN + instrument(name, linear) +
++                           (HERE / "tap.ml").read_text() + dependency).encode()).hexdigest()
++
++
++def replay_modes(name):
++    return (False, True) if name in NTT_NAMES else (False,)
++
++
++def accepted_fingerprints(name):
++    return {fingerprint(name, mode) for mode in replay_modes(name)}
++
++
++def entry_source(name, linear=False):
++    if name == "mlkem_intt":
++        return ('needs "ntt-bounds/generated/mlkem_intt.ml";;\n'
++                'ntt_bounds_finish "mlkem_intt" 256;;\n')
++    return instrument(name, linear)
++
++
++def entry_path(name):
++    return HERE / "generated" / (name + ("_result" if name == "mlkem_intt" else "") + ".ml")
++
++
++def generate(names, linear=False):
++    check_sources()
++    out = HERE / "generated"
++    out.mkdir(exist_ok=True)
++    for name in names:
++        path = out / (name + ".ml")
++        text = instrument(name, linear)
++        if not path.exists() or path.read_text() != text:
++            path.write_text(text)
++        if name == "mlkem_intt":
++            entry_path(name).write_text(entry_source(name, linear))
++    print(f"PASS: generated {len(names)} instrumented proofs at {PIN[:12]}")
++
++
++def results():
++    path = HERE / "results.tsv"
++    if not path.exists():
++        return {}
++    with path.open() as f:
++        rows = list(csv.DictReader(f, delimiter="\t"))
++    if len({r["name"] for r in rows}) != len(rows):
++        raise ValueError("duplicate result rows")
++    return {r["name"]: r for r in rows}
++
++
++def read_result(raw, name):
++    lines = [line for line in raw.splitlines(keepends=True)
++             if line.startswith("NTT_BOUND_RESULT ")]
++    match = (re.fullmatch(r"NTT_BOUND_RESULT (\w+) (\d+) (-?\d+) (-?\d+)\n", lines[0])
++             if len(lines) == 1 else None)
++    if not match or match[1] != name:
++        raise ValueError(f"{name}: missing, duplicate, or malformed bound result")
++    _, count, lo, hi = match.groups()
++    if int(count) != SPECS[name][0] or int(lo) > int(hi):
++        raise ValueError(f"{name}: wrong call count or invalid interval")
++    return count, lo, hi
++
++
++def collect(hearth, run_root, name):
++    info = json.loads(run([hearth, "inspect", str(run_root / name), "--json"],
++                          capture_output=True).stdout)
++    if info["verdict"] != "passed" or info["new_axioms"] != 0:
++        raise ValueError(f"{name}: Hearth did not accept complete source with 0 new axioms")
++    modes = [mode for mode in replay_modes(name)
++             if info["source_sha256"] == hashlib.sha256(entry_source(name, mode).encode()).hexdigest()]
++    if not modes:
++        raise ValueError(f"{name}: receipt belongs to a different source")
++    linear = modes[0]
++    receipt = Path(info["receipt"])
++    record = json.loads(receipt.read_text())
++    check_observer_identity(record)
++    if name == "mlkem_intt":
++        linear = check_intt_graph_identity(record)
++    elif linear:
++        check_linear_identity(record)
++    raw = receipt.with_name("transcript.log.raw").read_text()
++    count, lo, hi = read_result(raw, name)
++    return dict(name=name, count=count, lower=lo, upper=hi,
++                fingerprint=fingerprint(name, linear), receipt=str(receipt))
++
++
++def check_observer_identity(receipt):
++    expected = hashlib.sha256((HERE / "tap.ml").read_bytes()).hexdigest()
++    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
++                if item["package_path"] == "ntt-bounds/tap.ml"]
++    if recorded != [expected]:
++        raise ValueError("receipt does not capture the current CONGBOUND observer")
++
++
++def check_intt_graph_identity(receipt):
++    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
++                if item["package_path"] == "ntt-bounds/generated/mlkem_intt.ml"]
++    for linear in replay_modes("mlkem_intt"):
++        expected = hashlib.sha256(instrument("mlkem_intt", linear).encode()).hexdigest()
++        if recorded == [expected]:
++            if linear:
++                check_linear_identity(receipt)
++            return linear
++    raise ValueError("receipt does not capture the current inverse-NTT graph")
++
++
++def check_linear_identity(receipt):
++    expected = hashlib.sha256((HERE / "upstream_int_linear.ml").read_bytes()).hexdigest()
++    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
++                if item["package_path"] == "ntt-bounds/upstream_int_linear.ml"]
++    if recorded != [expected]:
++        raise ValueError("receipt does not capture the current linear congruence tactic")
++
++
++def reduction_values(raw):
++    lines = [line for line in raw.splitlines(keepends=True)
++             if line.startswith("NTT_REDUCTION_RESULT ")]
++    match = (re.fullmatch(r"NTT_REDUCTION_RESULT late-v21 64 (-?\d+) (-?\d+) 26624\n", lines[0])
++             if len(lines) == 1 else None)
++    if not match or int(match[1]) > int(match[2]):
++        raise ValueError("missing, malformed or duplicate inverse-NTT reduction result")
++    return int(match[1]), int(match[2])
++
++
++def reduction(args):
++    check_sources()
++    info = json.loads(run([args.hearth, "inspect", str(args.run_root / "intt-reduction"), "--json"],
++                          capture_output=True).stdout)
++    if info["verdict"] != "passed" or info["new_axioms"] != 0:
++        raise ValueError("reduction calculation was not accepted with 0 new axioms")
++    source = HERE / "intt_reduction.ml"
++    if info["source_sha256"] != hashlib.sha256(source.read_bytes()).hexdigest():
++        raise ValueError("reduction receipt belongs to a different leaf")
++    receipt = Path(info["receipt"])
++    record = json.loads(receipt.read_text())
++    check_observer_identity(record)
++    check_intt_graph_identity(record)
++    lo, hi = reduction_values(receipt.with_name("transcript.log.raw").read_text())
++    bound = max(abs(lo), abs(hi))
++    if bound <= 26624:
++        raise ValueError(f"candidate bound {bound} fits 26624: assembly proof and M5 timing still needed")
++    print(f"PASS: interval refutation: removing late v21 Barrett gives {bound} > spec 26624")
++    print("| Candidate | Removed scalar reductions | CONGBOUND interval | max abs / q | Spec |")
++    print("|---|---|---|---|---|")
++    print(f"| ARM mlkem_intt late v21 Barrett | 64 | [{lo}, {hi}] | {bound / 3329:.6f}q | <=26624 ({26624 / 3329:.6f}q) |")
++    print(f"Receipt: {receipt}")
++    print("This rejects this interval proof of the removal; it is not an attainable counterexample.")
++
++
++def save_results(saved):
++    with (HERE / "results.tsv").open("w") as f:
++        writer = csv.DictWriter(f, delimiter="\t", lineterminator="\n", fieldnames=[
++            "name", "count", "lower", "upper", "fingerprint", "receipt"])
++        writer.writeheader()
++        writer.writerows(saved[n] for n in sorted(saved))
++
++
++def collect_results(args):
++    check_sources()
++    saved = results()
++    for name in args.names:
++        saved[name] = collect(args.hearth, args.run_root, name)
++        save_results(saved)
++        print(f"PASS: {name} bounds {saved[name]['lower']}..{saved[name]['upper']}")
++
++
++def replay(args):
++    names = args.names or sorted(SPECS, key=lambda n: (n == "mlkem_intt", n))
++    saved = results()
++    pending = [n for n in names
++               if n not in saved or saved[n]["fingerprint"] not in accepted_fingerprints(n)]
++    generate(pending, args.linear)
++    for name in names:
++        if name in saved and saved[name]["fingerprint"] in accepted_fingerprints(name):
++            print(f"PASS: {name} already extracted; source unchanged", flush=True)
++            continue
++        family = name.split("_")[0]
++        run(["make", "-C", "arm", f"{family}/{name}.o"], cwd=ROOT)
++        basis = (["--basis", str(HERE / "generated/mlkem_intt.ml"),
++                  "--basis-cache-root", str(args.run_root)] if name == "mlkem_intt" else [])
++        run([args.hearth, "prove", str(entry_path(name)), *basis,
++             "--profile", "s2n-arm-mlkem", "--timeout", str(args.timeout),
++             "--run-root", str(args.run_root / name)], cwd=ROOT)
++        saved[name] = collect(args.hearth, args.run_root, name)
++        save_results(saved)
++        print(f"PASS: {name} bounds {saved[name]['lower']}..{saved[name]['upper']}", flush=True)
++
++
++def multiples(text, q):
++    return re.sub(r"\b(\d{4,})\b", lambda m: f"{int(m[0])/q:.6f}q", text)
++
++
++def table():
++    check_sources()
++    saved = results()
++    missing = [n for n in SPECS if n not in saved or saved[n]["fingerprint"] not in accepted_fingerprints(n)]
++    if missing:
++        raise ValueError("table incomplete or stale: " + ", ".join(missing))
++    lines = []
++    for name in sorted(SPECS):
++        _, inp, out = SPECS[name]
++        q = 3329 if name.startswith("mlkem") else 8380417
++        row = saved[name]
++        lo, hi = int(row["lower"]), int(row["upper"])
++        if int(row["count"]) != SPECS[name][0] or lo > hi:
++            raise ValueError(f"{name}: saved result count or interval invalid")
++        label = ""
++        if name == "mlkem_reduce":
++            if (lo, hi) != (-1664, 1664):
++                raise ValueError("mlkem_reduce: centered lemma bounds changed")
++            lo, hi = 0, 3328
++            label = " (exact remainder; centered intermediate [-1664,1664])"
++        cells = (name, f"{inp}; {multiples(inp, q)}", f"{out}; {multiples(out,q)}",
++                 f"[{lo}, {hi}]{label}", f"{max(abs(lo),abs(hi))/q:.6f}q")
++        lines.append("| " + " | ".join(c.replace("|", r"\|") for c in cells) + " |")
++    print(f"PASS: table covers all {len(SPECS)} ARM CONGBOUND proofs at {PIN[:12]}; x86 NOT RUN")
++    linear_count = sum(saved[n]["fingerprint"] == fingerprint(n, True) for n in NTT_NAMES)
++    print(f"NTT congruence finishing tactic: {linear_count}/4 upstream linear; {4-linear_count}/4 original.")
++    print("q = 3329 for ML-KEM; q = 8380417 for ML-DSA. Ratios are rounded to six decimal places.")
++    print("| Function | Input assumption (and /q) | Spec output (and /q) | Proof-derived interval | max abs /q |")
++    print("|---|---|---|---|---|")
++    print("\n".join(lines))
++    print("| x86 mlkem_intt | NOT RUN | abs(z) < 26632 (8q) | NOT RUN; #321 reports 14939 | NOT RUN |")
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    sub = parser.add_subparsers(dest="command", required=True)
++    sub.add_parser("table")
++    generator = sub.add_parser("generate")
++    generator.add_argument("names", nargs="*")
++    generator.add_argument("--linear", action="store_true")
++    for command in ("replay", "collect", "reduction"):
++        p = sub.add_parser(command)
++        if command != "reduction":
++            p.add_argument("names", nargs="*" if command == "replay" else "+")
++        if command == "replay":
++            p.add_argument("--linear", action="store_true")
++        p.add_argument("--hearth", default=os.environ.get("HEARTH", "hearth"))
++        p.add_argument("--run-root", type=Path, required=True)
++        p.add_argument("--timeout", type=int, default=7200)
++    args = parser.parse_args()
++    try:
++        if hasattr(args, "run_root"):
++            args.run_root = args.run_root.resolve()
++        unknown = set(getattr(args, "names", [])) - SPECS.keys()
++        if unknown:
++            raise ValueError("unknown functions: " + ", ".join(sorted(unknown)))
++        if args.command == "table":
++            table()
++        elif args.command == "generate":
++            generate(args.names or sorted(SPECS), args.linear)
++        elif args.command == "collect":
++            collect_results(args)
++        elif args.command == "reduction":
++            reduction(args)
++        else:
++            replay(args)
++    except (ValueError, OSError, subprocess.CalledProcessError, KeyError) as exc:
++        print(f"FAIL: {exc}", file=sys.stderr)
++        return 1
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/ntt-bounds/check_linear.ml b/ntt-bounds/check_linear.ml
+new file mode 100644
+index 00000000..4106a5cf
+--- /dev/null
++++ b/ntt-bounds/check_linear.ml
+@@ -0,0 +1,13 @@
++(* Compatibility checks for the unchanged upstream congruence tactic.
++   These are auxiliary checks, not NTT function proofs or bound results. *)
++needs "ntt-bounds/upstream_int_linear.ml";;
++
++let NTT_BOUNDS_LINEAR_MLKEM = prove
++ (`!x y z:int.
++     (&17 * x - &3328 * y + &6659 * z == &17 * x + y + z) (mod &3329)`,
++  REPEAT GEN_TAC THEN INT_LINEAR_CONG_TAC);;
++
++let NTT_BOUNDS_LINEAR_MLDSA = prove
++ (`!x y z:int.
++     (x + &8380418 * y - &16760833 * z == x + y + z) (mod &8380417)`,
++  REPEAT GEN_TAC THEN INT_LINEAR_CONG_TAC);;
+diff --git a/ntt-bounds/intt_reduction.ml b/ntt-bounds/intt_reduction.ml
+new file mode 100644
+index 00000000..32a2c172
+--- /dev/null
++++ b/ntt-bounds/intt_reduction.ml
+@@ -0,0 +1,121 @@
++(* A conditional CONGBOUND calculation for removing the late v21 Barrett
++   reductions in arm/mlkem/mlkem_intt.S. This is an interval-method test,
++   not an assertion that a modified machine function has been proved.
++   Run over the completed instrumented inverse-NTT basis. *)
++needs "ntt-bounds/generated/mlkem_intt.ml";;
++
++let ntt_intt_asms =
++  match !ntt_bounds_local_inputs with
++  | [asms] -> asms
++  | _ -> failwith "NTT reduction: expected one local-definition graph";;
++
++let ntt_intt_definitions =
++  map (fun th -> let b,v = dest_eq(concl th) in (v,b)) ntt_intt_asms;;
++
++let ntt_intt_is_barmul_var v =
++  try let head,_ = strip_comb (assoc v ntt_intt_definitions) in
++      fst(dest_const head) = "barmul"
++  with Failure _ -> false;;
++
++let ntt_intt_is_barmul_sum bod =
++  match bod with
++  | Comb(Const("barred",_),Comb(Comb(Const("word_add",_),a),b)) ->
++      ntt_intt_is_barmul_var a && ntt_intt_is_barmul_var b
++  | _ -> false;;
++
++let ntt_intt_removed =
++  let barred_asms = filter
++    (fun th -> match lhand(concl th) with
++               | Comb(Const("barred",_),_) -> true | _ -> false)
++    ntt_intt_asms in
++  if length barred_asms <> 192 then
++    failwith ("NTT reduction: expected 192 chronological Barrett terms, got " ^
++              string_of_int(length barred_asms));
++  (* The proof passes LOCAL_CONGBOUND_RULE its definitions oldest first.
++     Each of eight blocks reduces Q29 (8 lanes), Q9 (8), then Q21 (8).
++     Seven blocks use the loop and the eighth uses the tail. Earlier Q29/Q9
++     lanes can have the same barmul-sum shape after the SIMD shuffles, so
++     expression shape alone does not identify the intended instruction. *)
++  map snd (filter (fun (i,_) -> i mod 24 >= 16)
++                  (zip (0--191) barred_asms));;
++
++if length ntt_intt_removed <> 64 then
++  failwith ("NTT reduction: expected 64 late Barrett terms, got " ^
++            string_of_int(length ntt_intt_removed));;
++
++if not (forall (ntt_intt_is_barmul_sum o lhand o concl) ntt_intt_removed) then
++  failwith "NTT reduction: late Barrett operand shape changed";;
++
++let ntt_intt_removed_vars = map (rand o concl) ntt_intt_removed;;
++
++(* The original addition/subtraction rule requires that its interval fit in
++   signed 16 bits. Removing a reduction can invalidate that condition. Check
++   the condition in the kernel; at a false condition use CONGBOUND_ATOM's
++   valid signed-word interval, then continue propagating bounds. *)
++let ntt_intt_wrapped_nodes = ref [];;
++
++let rec ntt_intt_rule lfn tm =
++  try apply lfn tm with Failure _ ->
++  let checked_arithmetic th =
++    let side = DIMINDEX_INT_REDUCE_CONV(lhand(concl th)) in
++    if aconv (rand(concl side)) `T` then
++      CONCL_BOUNDS_RULE(MP th (EQT_ELIM side))
++    else if aconv (rand(concl side)) `F` then
++      (ntt_intt_wrapped_nodes := (tm,side) :: !ntt_intt_wrapped_nodes;
++       CONCL_BOUNDS_RULE(ISPEC tm CONGBOUND_ATOM))
++    else failwith "NTT reduction: undecided signed-word arithmetic condition" in
++  match tm with
++  | Comb(Comb(Const("word_add",_),a),b) ->
++      checked_arithmetic (MATCH_MP CONGBOUND_WORD_ADD
++        (UNIFY_INTCONG_RULE (ntt_intt_rule lfn a) (ntt_intt_rule lfn b)))
++  | Comb(Comb(Const("word_sub",_),a),b) ->
++      checked_arithmetic (MATCH_MP CONGBOUND_WORD_SUB
++        (UNIFY_INTCONG_RULE (ntt_intt_rule lfn a) (ntt_intt_rule lfn b)))
++  | _ ->
++      (* Let the original rule handle all other operations, with recursive
++         children routed through the checked arithmetic above. *)
++      let children = match tm with
++        | Comb(Const("word_sx",_),t) -> [t]
++        | _ -> filter (fun t -> type_of t = type_of tm)
++                      (snd(strip_comb tm)) in
++      let subfn = itlist (fun t fn -> (t |-> ntt_intt_rule lfn t) fn)
++                        children lfn in
++      ntt_bounds_original_rule subfn tm;;
++
++let ntt_intt_without_late_barrett =
++  itlist (fun th lfn ->
++    let bod,var = dest_eq(concl th) in
++    (* Treat the whole changed graph as explicit equations. Do not carry
++       any simulation hypotheses from the original machine execution. *)
++    let newbod = if mem var ntt_intt_removed_vars then rand bod else bod in
++    let eq = ASSUME(mk_eq(newbod,var)) in
++    let cb = ntt_intt_rule lfn (lhand(concl eq)) in
++    (var |-> SUBS[eq] cb) lfn)
++    (rev ntt_intt_asms) undefined;;
++
++let ntt_intt_alternative_bounds =
++  map (ntt_intt_rule ntt_intt_without_late_barrett)
++      (rev !ntt_bounds_words);;
++
++let NTT_INTT_WITHOUT_LATE_BARRETT_BOUNDS =
++  (* Expose the changed graph equations as implication premises, rather than
++     leave undischarged hypotheses on the recorded theorem. *)
++  DISCH_ALL (end_itlist CONJ (map CONJUNCT2 ntt_intt_alternative_bounds));;
++
++let ntt_intt_alternative_intervals =
++  map (fun th -> let lo,hi = dest_conj(rand(concl th)) in
++       dest_intconst(lhand lo),dest_intconst(rand hi))
++      ntt_intt_alternative_bounds;;
++
++let ntt_intt_alternative_lower =
++  end_itlist min_num (map fst ntt_intt_alternative_intervals)
++and ntt_intt_alternative_upper =
++  end_itlist max_num (map snd ntt_intt_alternative_intervals);;
++
++print_endline ("NTT_REDUCTION_WRAPPED_NODES " ^
++               string_of_int(length !ntt_intt_wrapped_nodes));;
++
++print_endline
++ ("NTT_REDUCTION_RESULT late-v21 64 " ^
++  string_of_num ntt_intt_alternative_lower ^ " " ^
++  string_of_num ntt_intt_alternative_upper ^ " 26624");;
+diff --git a/ntt-bounds/results.tsv b/ntt-bounds/results.tsv
+new file mode 100644
+index 00000000..8f20c46c
+--- /dev/null
++++ b/ntt-bounds/results.tsv
+@@ -0,0 +1,11 @@
++name	count	lower	upper	fingerprint	receipt
++mldsa_pointwise	256	-5514723	5514723	fcc776aba54ca52c8477b9c379bd782fd9fa9015235972e8e119d9627d4f2f41	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise/20261005T042120Z-390597-mldsa_pointwise-861f0b/transcript.log.json
++mldsa_pointwise_acc_l4	256	-4778882	4778882	34ae58fdd33e459cc6f280a3c3aef158915f83edfcf7b9da1c381f862ffe91b9	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l4/20261005T043357Z-394299-mldsa_pointwise_acc_l4-9119a0/transcript.log.json
++mlkem_basemul_k2	256	-9857	9857	ab253342ca3fe096d65dd98830731434e944cbb1cc7185927eadc1bd0efbdd9c	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k2/20261005T010601Z-268181-mlkem_basemul_k2-7d6936/transcript.log.json
++mlkem_basemul_k3	256	-13953	13953	589eae01d3d26f342311d7d89bc3496270575dc8e74911e8ed7daab780156c3f	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k3/20261005T015959Z-314741-mlkem_basemul_k3-c7d89e/transcript.log.json
++mlkem_basemul_k4	256	-18049	18049	b4df2304854e1ecc38eeaaf2cf3f0850e3b713b64ef7ec1e39a36e26c3f9ee09	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k4/20261005T033109Z-375368-mlkem_basemul_k4-d82efd/transcript.log.json
++mlkem_intt	256	-26624	26624	cefed10bf7d4683acf63ebeac862b5ff89de239fab1b105506ab10d688db28de	/home/bluestar/lanes/ntt-bounds/runs/mlkem_intt/20261005T011059Z-270765-mlkem_intt_result-b6e7ee/transcript.log.json
++mlkem_mulcache_compute	128	-3292	3292	1f93519f3b22800395f7aabbe428a9bc140d3999a8adbff02dd1fa834027013f	/home/bluestar/lanes/ntt-bounds/runs/mlkem_mulcache_compute/20261004T234841Z-189027-mlkem_mulcache_compute-0ed893/transcript.log.json
++mlkem_ntt	256	-23594	23594	246bb8459f7e975bf7838d8b9d31d2b11089d1a2b26713a1440ee514b0c1b3e7	/home/bluestar/lanes/ntt-bounds/runs/mlkem_ntt/20261004T235119Z-192046-mlkem_ntt-3e6a3d/transcript.log.json
++mlkem_reduce	1	-1664	1664	6a6caad283ae69b4c218050a9ffae7d00ccfc019f586d1a36ee57c684d140494	/home/bluestar/lanes/ntt-bounds/runs/mlkem_reduce/20261004T234508Z-187065-mlkem_reduce-c48700/transcript.log.json
++mlkem_tomont	256	-2653	2653	147a1e1dad991c4f97557fba66ffb5e519884ccfc30387acd59f695bdaaedea6	/home/bluestar/lanes/ntt-bounds/runs/mlkem_tomont/20261004T234152Z-185003-mlkem_tomont-e87de2/transcript.log.json
+diff --git a/ntt-bounds/tap.ml b/ntt-bounds/tap.ml
+new file mode 100644
+index 00000000..39b885a4
+--- /dev/null
++++ b/ntt-bounds/tap.ml
+@@ -0,0 +1,38 @@
++(* Observe the theorem supplied to the CONGBOUND split, without changing it.
++   LOCAL_CONGBOUND_RULE retains its original lexical bindings, so only calls
++   made directly by the function proof are counted (not intermediate nodes). *)
++let ntt_bounds_observed = ref [];;
++let ntt_bounds_words = ref [];;
++let ntt_bounds_local_inputs = ref [];;
++let ntt_bounds_original_rule = ASM_CONGBOUND_RULE;;
++
++let LOCAL_CONGBOUND_RULE lfn asms =
++  ntt_bounds_local_inputs := asms :: !ntt_bounds_local_inputs;
++  LOCAL_CONGBOUND_RULE lfn asms;;
++
++let ntt_bounds_tap th =
++  let lo,hi = dest_conj(rand(concl th)) in
++  if not (is_binop `(<=):int->int->bool` lo &&
++          is_binop `(<=):int->int->bool` hi &&
++          aconv (rand lo) (lhand hi))
++  then failwith "NTT bounds: unexpected CONGBOUND theorem shape";
++  let l = dest_intconst(lhand lo) and u = dest_intconst(rand hi) in
++  if l >/ u then failwith "NTT bounds: inverted interval";
++  ntt_bounds_observed := (l,u):: !ntt_bounds_observed;
++  th;;
++
++let ASM_CONGBOUND_RULE lfn tm =
++  ntt_bounds_words := tm :: !ntt_bounds_words;
++  ntt_bounds_tap (ASM_CONGBOUND_RULE lfn tm);;
++let GEN_CONGBOUND_RULE ths tm = ntt_bounds_tap (GEN_CONGBOUND_RULE ths tm);;
++let CONGBOUND_RULE tm = ntt_bounds_tap (CONGBOUND_RULE tm);;
++
++let ntt_bounds_finish name expected =
++  let intervals = !ntt_bounds_observed in
++  if length intervals <> expected then
++    failwith ("NTT bounds: expected " ^ string_of_int expected ^
++              " calls, observed " ^ string_of_int (length intervals));
++  let lower = end_itlist min_num (map fst intervals)
++  and upper = end_itlist max_num (map snd intervals) in
++  print_endline ("NTT_BOUND_RESULT " ^ name ^ " " ^ string_of_int expected ^
++                 " " ^ string_of_num lower ^ " " ^ string_of_num upper);;
+diff --git a/ntt-bounds/test_bounds.py b/ntt-bounds/test_bounds.py
+new file mode 100644
+index 00000000..c7e304f1
+--- /dev/null
++++ b/ntt-bounds/test_bounds.py
+@@ -0,0 +1,139 @@
++import unittest
++import json
++import hashlib
++import contextlib
++import io
++from pathlib import Path
++from tempfile import TemporaryDirectory
++from types import SimpleNamespace
++from unittest.mock import patch
++
++import bounds
++
++
++class ExtractionChecks(unittest.TestCase):
++    def test_reject_partial_duplicate_wrong_count_or_inverted_result(self):
++        good = "NTT_BOUND_RESULT mlkem_tomont 256 -1665 1665\n"
++        self.assertEqual(bounds.read_result(good, "mlkem_tomont"), ("256", "-1665", "1665"))
++        for bad in ("", good[:-4], good * 2, good + "NTT_BOUND_RESULT truncated\n", good.replace("256", "128"),
++                    good.replace("-1665 1665", "3 2"), good.replace("tomont", "ntt")):
++            with self.subTest(raw=bad), self.assertRaises(ValueError):
++                bounds.read_result(bad, "mlkem_tomont")
++
++    def test_instrument_preserves_original_proof(self):
++        for name in bounds.SPECS:
++            original = (bounds.ROOT / "arm/proofs" / (name + ".ml")).read_text()
++            generated = bounds.instrument(name)
++            restored = generated.replace('\nneeds "ntt-bounds/tap.ml";;', '')
++            restored = restored[:restored.rindex('\nntt_bounds_finish')]
++            self.assertEqual(original, restored)
++
++    def test_linear_variant_preserves_every_other_proof_step(self):
++        for name in bounds.SPECS:
++            original = bounds.instrument(name)
++            linear = bounds.instrument(name, True)
++            if name in bounds.NTT_NAMES:
++                self.assertEqual(linear.count(bounds.LINEAR_FINISH), 1)
++                restored = linear.replace(bounds.LINEAR_IMPORT, "")
++                restored = restored.replace(bounds.LINEAR_FINISH, bounds.ORIGINAL_FINISH)
++                self.assertEqual(restored, original)
++                self.assertNotEqual(bounds.fingerprint(name), bounds.fingerprint(name, True))
++            else:
++                self.assertEqual(linear, original)
++
++    def test_linear_mode_reuses_accepted_original_without_regenerating(self):
++        name = "mlkem_ntt"
++        args = SimpleNamespace(names=[name], linear=True)
++        saved = {name: dict(fingerprint=bounds.fingerprint(name))}
++        with patch.object(bounds, "results", return_value=saved), \
++             patch.object(bounds, "generate") as generate, \
++             patch.object(bounds, "run") as run, contextlib.redirect_stdout(io.StringIO()):
++            bounds.replay(args)
++        generate.assert_called_once_with([], True)
++        run.assert_not_called()
++
++    def test_generate_cli_selects_only_named_proofs(self):
++        with patch("sys.argv", ["bounds.py", "generate", "--linear", "mlkem_intt"]), \
++             patch.object(bounds, "generate") as generate:
++            self.assertEqual(bounds.main(), 0)
++        generate.assert_called_once_with(["mlkem_intt"], True)
++        with patch("sys.argv", ["bounds.py", "generate", "unknown"]), \
++             patch.object(bounds, "generate") as generate, contextlib.redirect_stderr(io.StringIO()):
++            self.assertEqual(bounds.main(), 1)
++        generate.assert_not_called()
++
++    def test_table_refuses_missing_results(self):
++        with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):
++            with self.assertRaisesRegex(ValueError, "incomplete"):
++                bounds.table()
++
++    def test_collect_rejects_incomplete_axioms_and_stale_source(self):
++        for verdict, axioms, source in (("incomplete", 0, ""), ("passed", 1, ""),
++                                         ("passed", 0, "wrong-source-hash")):
++            info = dict(verdict=verdict, new_axioms=axioms, source_sha256=source)
++            with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
++                with self.subTest(info=info), self.assertRaises(ValueError):
++                    bounds.collect("hearth", Path("unused"), "mlkem_tomont")
++
++    def test_receipt_must_capture_current_observer(self):
++        item = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
++            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
++        bounds.check_observer_identity(dict(dependency_package_files=[item]))
++        for files in ([], [item, item], [dict(item, sha256="old-observer")]):
++            with self.subTest(files=files), self.assertRaises(ValueError):
++                bounds.check_observer_identity(dict(dependency_package_files=files))
++
++    def test_intt_collection_checks_loaded_graph(self):
++        observer = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
++            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
++        graph = dict(package_path="ntt-bounds/generated/mlkem_intt.ml",
++                     sha256=hashlib.sha256(bounds.instrument("mlkem_intt").encode()).hexdigest())
++        with TemporaryDirectory() as directory:
++            receipt = Path(directory) / "transcript.log.json"
++            receipt.with_name("transcript.log.raw").write_text(
++                "NTT_BOUND_RESULT mlkem_intt 256 -123 123\n")
++            info = dict(verdict="passed", new_axioms=0, receipt=str(receipt),
++                        source_sha256=hashlib.sha256(bounds.entry_source("mlkem_intt").encode()).hexdigest())
++            with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
++                receipt.write_text(json.dumps(dict(dependency_package_files=[observer, graph])))
++                self.assertEqual(bounds.collect("hearth", Path(directory), "mlkem_intt")["upper"], "123")
++                for graphs in ([], [graph, graph], [dict(graph, sha256="old-graph")]):
++                    receipt.write_text(json.dumps(dict(dependency_package_files=[observer, *graphs])))
++                    with self.subTest(graphs=graphs), self.assertRaisesRegex(ValueError, "inverse-NTT graph"):
++                        bounds.collect("hearth", Path(directory), "mlkem_intt")
++
++    def test_reduction_result_rejects_incomplete_or_wrong_graph_count(self):
++        text = "NTT_REDUCTION_RESULT late-v21 64 -27000 27000 26624\n"
++        self.assertEqual(bounds.reduction_values(text), (-27000, 27000))
++        for bad in ("", text[:-1], text * 2, text.replace("64 -", "32 -"),
++                    text.replace("26624", "26632"), text.replace("-27000 27000", "2 1")):
++            with self.subTest(text=bad), self.assertRaises(ValueError):
++                bounds.reduction_values(bad)
++
++    def test_linear_collection_checks_helper_for_direct_and_basis_proofs(self):
++        observer = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
++            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
++        helper = dict(package_path="ntt-bounds/upstream_int_linear.ml", sha256=hashlib.sha256(
++            (bounds.HERE / "upstream_int_linear.ml").read_bytes()).hexdigest())
++        with TemporaryDirectory() as directory:
++            receipt = Path(directory) / "transcript.log.json"
++            for name in ("mlkem_ntt", "mlkem_intt"):
++                receipt.with_name("transcript.log.raw").write_text(
++                    f"NTT_BOUND_RESULT {name} 256 -123 123\n")
++                graph = ([dict(package_path="ntt-bounds/generated/mlkem_intt.ml",
++                               sha256=hashlib.sha256(bounds.instrument(name, True).encode()).hexdigest())]
++                         if name == "mlkem_intt" else [])
++                info = dict(verdict="passed", new_axioms=0, receipt=str(receipt),
++                            source_sha256=hashlib.sha256(bounds.entry_source(name, True).encode()).hexdigest())
++                with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
++                    receipt.write_text(json.dumps(dict(dependency_package_files=[observer, helper, *graph])))
++                    result = bounds.collect("hearth", Path(directory), name)
++                    self.assertEqual(result["fingerprint"], bounds.fingerprint(name, True))
++                    for helpers in ([], [helper, helper], [dict(helper, sha256="old-helper")]):
++                        receipt.write_text(json.dumps(dict(dependency_package_files=[observer, *helpers, *graph])))
++                        with self.subTest(name=name, helpers=helpers), self.assertRaisesRegex(ValueError, "linear congruence tactic"):
++                            bounds.collect("hearth", Path(directory), name)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/ntt-bounds/upstream_int_linear.ml b/ntt-bounds/upstream_int_linear.ml
+new file mode 100644
+index 00000000..0dc5fe15
+--- /dev/null
++++ b/ntt-bounds/upstream_int_linear.ml
+@@ -0,0 +1,159 @@
++(*
++ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
++ * SPDX-License-Identifier: Apache-2.0 OR ISC OR MIT-0
++ *)
++
++(* ========================================================================= *)
++(* Linear integer congruence certificates.                                    *)
++(* ========================================================================= *)
++
++let INT_LINEAR_ADD_TM = `(+):int->int->int`
++and INT_LINEAR_SUB_TM = `(-):int->int->int`
++and INT_LINEAR_MUL_TM = `(*):int->int->int`
++and INT_LINEAR_NEG_TM = `(--):int->int`;;
++
++let INT_LINEAR_CONG_FROM_WITNESS = prove
++ (`!a b q d:int.
++     a - b = q * d
++     ==> (a == b) (mod q)`,
++  REPEAT GEN_TAC THEN
++  REWRITE_TAC[int_congruent] THEN
++  DISCH_TAC THEN
++  EXISTS_TAC `d:int` THEN
++  ASM_REWRITE_TAC[]);;
++
++let INT_LINEAR_EMPTY () =
++  ref num_0,
++  Hashtbl.create 521,
++  ref [];;
++
++let INT_LINEAR_ADD_ATOM (_,coefficients,order) tm coefficient =
++  if coefficient <>/ num_0 then
++    try
++      let cell = Hashtbl.find coefficients tm in
++      cell := !cell +/ coefficient
++    with Not_found ->
++      Hashtbl.add coefficients tm (ref coefficient);
++      order := tm::!order;;
++
++(* Treat products by concrete integers as scalar multiplication. Other
++   products remain opaque atoms, so the rule also applies to expressions
++   that are linear in larger syntactic subterms. *)
++
++let rec INT_LINEAR_COLLECT
++    ((constant,_,_) as linear) scale tm =
++  if is_intconst tm then
++    constant := !constant +/ scale */ dest_intconst tm
++  else if is_binop INT_LINEAR_ADD_TM tm then
++    let l,r = dest_binop INT_LINEAR_ADD_TM tm in
++    INT_LINEAR_COLLECT linear scale l;
++    INT_LINEAR_COLLECT linear scale r
++  else if is_binop INT_LINEAR_SUB_TM tm then
++    let l,r = dest_binop INT_LINEAR_SUB_TM tm in
++    INT_LINEAR_COLLECT linear scale l;
++    INT_LINEAR_COLLECT linear (minus_num scale) r
++  else if is_comb tm && rator tm = INT_LINEAR_NEG_TM then
++    INT_LINEAR_COLLECT linear (minus_num scale) (rand tm)
++  else if is_binop INT_LINEAR_MUL_TM tm then
++    let l,r = dest_binop INT_LINEAR_MUL_TM tm in
++    if is_intconst l then
++      INT_LINEAR_COLLECT linear (scale */ dest_intconst l) r
++    else if is_intconst r then
++      INT_LINEAR_COLLECT linear (scale */ dest_intconst r) l
++    else
++      INT_LINEAR_ADD_ATOM linear tm scale
++  else
++    INT_LINEAR_ADD_ATOM linear tm scale;;
++
++let INT_LINEAR_TERM coefficient tm =
++  if coefficient =/ num_1 then tm
++  else if coefficient =/ minus_num num_1 then
++    mk_comb(INT_LINEAR_NEG_TM,tm)
++  else
++    mk_binop INT_LINEAR_MUL_TM (mk_intconst coefficient) tm;;
++
++let rec INT_LINEAR_RIGHT_ADD = function
++    [] -> `(&0:int)`
++  | [tm] -> tm
++  | tm::tms ->
++      mk_binop INT_LINEAR_ADD_TM tm (INT_LINEAR_RIGHT_ADD tms);;
++
++let INT_LINEAR_DIVIDE modulus coefficient =
++  if modulus =/ num_0 then
++    if coefficient =/ num_0 then num_0
++    else failwith "INT_LINEAR_DIVIDE: nonzero coefficient modulo zero"
++  else if mod_num coefficient modulus =/ num_0 then
++    quo_num coefficient modulus
++  else
++    failwith "INT_LINEAR_DIVIDE: coefficient is not divisible";;
++
++let INT_LINEAR_DEST_CONG goal =
++  let op,args = strip_comb goal in
++  if not(is_const op && fst(dest_const op) = "==") ||
++     length args <> 3
++  then
++    failwith "INT_LINEAR_DEST_CONG: not a congruence"
++  else
++    let lhs = List.nth args 0
++    and rhs = List.nth args 1
++    and modulus_tm = rand(List.nth args 2) in
++    if type_of lhs <> `:int` || type_of rhs <> `:int` ||
++       type_of modulus_tm <> `:int`
++    then
++      failwith "INT_LINEAR_DEST_CONG: not an integer congruence"
++    else if not(is_intconst modulus_tm) then
++      failwith "INT_LINEAR_DEST_CONG: nonconstant modulus"
++    else
++      lhs,rhs,modulus_tm,dest_intconst modulus_tm;;
++
++let INT_LINEAR_CONG_WITNESS goal =
++  let lhs,rhs,_,modulus = INT_LINEAR_DEST_CONG goal in
++  let linear = INT_LINEAR_EMPTY () in
++  let constant,coefficients,order = linear in
++  INT_LINEAR_COLLECT linear num_1 lhs;
++  INT_LINEAR_COLLECT linear (minus_num num_1) rhs;
++  let terms =
++    map
++     (fun tm ->
++        let coefficient = !(Hashtbl.find coefficients tm) in
++        INT_LINEAR_TERM
++          (INT_LINEAR_DIVIDE modulus coefficient) tm)
++     (filter
++       (fun tm -> !(Hashtbl.find coefficients tm) <>/ num_0)
++       (rev(!order))) in
++  let constant =
++    INT_LINEAR_DIVIDE modulus !constant in
++  INT_LINEAR_RIGHT_ADD
++   (if constant =/ num_0 then terms
++    else mk_intconst constant::terms);;
++
++let INT_LINEAR_CONG_RULE goal =
++  let lhs,rhs,modulus_tm,_ = INT_LINEAR_DEST_CONG goal in
++  let witness = INT_LINEAR_CONG_WITNESS goal in
++  let difference =
++    mk_binop INT_LINEAR_SUB_TM lhs rhs
++  and multiple =
++    mk_binop INT_LINEAR_MUL_TM modulus_tm witness in
++  (* The collector has already chosen the quotient. Normalize both sides
++     only to check that certificate; no ideal or witness search is needed. *)
++  let difference_th = INT_POLY_CONV difference
++  and multiple_th = INT_POLY_CONV multiple in
++  let equality_th =
++    if aconv
++        (rand(concl difference_th))
++        (rand(concl multiple_th))
++    then TRANS difference_th (SYM multiple_th)
++    else
++      failwith
++        "INT_LINEAR_CONG_RULE: normalization mismatch" in
++  let result =
++    MP
++     (SPECL
++       [lhs;rhs;modulus_tm;witness]
++       INT_LINEAR_CONG_FROM_WITNESS)
++     equality_th in
++  if aconv (concl result) goal then result
++  else failwith "INT_LINEAR_CONG_RULE: conclusion mismatch";;
++
++let INT_LINEAR_CONG_TAC (asl,goal) =
++  ACCEPT_TAC(INT_LINEAR_CONG_RULE goal) (asl,goal);;

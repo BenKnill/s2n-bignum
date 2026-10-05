@@ -7,6 +7,18 @@ Hearth `s2n-arm-mlkem` profile. All 14 ARM proofs that call the CONGBOUND family
 are covered, including the three base multiplications whose specs only state
 congruence and the reducer whose exact remainder result implies canonical bounds.
 
+`PR.patch` is the review copy of this directory's changes against the analysis
+revision. The comment marks any pending proofs; refresh the patch after new
+results are accepted. From the repository root:
+
+```sh
+git diff --binary fce78c7c17baee6a60511efe821930d4d049a6c0 -- ntt-bounds ':!ntt-bounds/PR.patch' > ntt-bounds/PR.patch
+git apply --reverse --check ntt-bounds/PR.patch
+```
+
+The second command checks that the exported patch matches the current files.
+Apply it to a checkout of the analysis revision with `git apply /path/to/PR.patch`.
+
 From the repository root, prepare a Python environment (standard library only):
 
 ```sh
