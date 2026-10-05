@@ -45,6 +45,8 @@ def probes(source, name):
 def judge(raw, name):
     count, lo, hi = bounds.read_result(raw, name)
     markers = [line for line in raw.splitlines() if line.startswith("NTT_COLD_")]
+    if name == "mlkem_intt":
+        markers = [line for line in markers if line != "NTT_COLD_REDUCTION_PASS 0"]
     expected = {"NTT_COLD_BINDING " + name.upper() + suffix for suffix in
                 ("_CORRECT", "_SUBROUTINE_CORRECT", "_SUBROUTINE_SAFE")}
     expected.add(f"NTT_COLD_PASS {name} 3 0")
@@ -53,6 +55,13 @@ def judge(raw, name):
     if re.search(r"(?im)^(?:Fatal error:|Exception:|Error in included file)", raw):
         raise ValueError(f"{name}: proof log contains an error")
     return int(count), int(lo), int(hi)
+
+
+def comparison(warm_row, lower, upper):
+    # results.tsv stores the centered CONGBOUND interval for mlkem_reduce;
+    # only the displayed table converts the exact remainder to canonical form.
+    same = (lower, upper) == (int(warm_row["lower"]), int(warm_row["upper"]))
+    return "PASS (same number)" if same else "PASS (NUMBER CHANGED)"
 
 
 def judge_reduction(raw):
@@ -98,6 +107,97 @@ def validate_inputs(root, hol):
     if not (hol / "hol_lib.cmxa").exists():
         raise ValueError("build fresh HOL with HOLLIGHT_USE_MODULE=1 make first")
     return s2n_commit, hol_commit
+
+
+def entry_source(source, name):
+    suffix = ""
+    if name == "mlkem_intt":
+        suffix = ('needs "ntt-bounds/intt_reduction.ml";;\n'
+                  'if hyp NTT_INTT_WITHOUT_LATE_BARRETT_BOUNDS <> [] then\n'
+                  ' failwith "Cold reduction: hypotheses remain";;\n'
+                  'check_axioms ();;\n'
+                  'print_endline "NTT_COLD_REDUCTION_PASS 0";;\n')
+    return f'needs "ntt-bounds/generated/{name}.ml";;\n' + suffix + probes(source, name)
+
+
+def reduction_row(raw, receipt):
+    lower, upper, nodes = judge_reduction(raw)
+    maximum = max(abs(lower), abs(upper))
+    verdict = "PASS" if maximum > 26624 else "NUMBER CHANGED (refutation no longer holds)"
+    interval = f"[{lower},{upper}]; max {maximum}; spec 26624; {nodes} widened nodes"
+    return ("late-v21 reduction", "[-32768,32767]; max 32768 > 26624",
+            interval, verdict, str(receipt))
+
+
+def summarize(rows):
+    incomplete = [row for row in rows if row[3].startswith(("FAIL", "NUMBER CHANGED", "NOT STARTED"))]
+    print(f"{'FAIL' if incomplete else 'PASS'}: cold replay report covers 14 ARM rows and the reduction; "
+          f"{sum(row[3].startswith('PASS') for row in rows)}/15 replayed; "
+          f"{sum(row[3].startswith('NOT REPLAYED') for row in rows)} budget exclusions", flush=True)
+    return 1 if incomplete else 0
+
+
+def collect(args):
+    """Recheck saved terminal receipts and logs without running a proof."""
+    root, hol, receipts = args.checkout.resolve(), args.hol.resolve(), args.run_root.resolve()
+    s2n, hol_commit = validate_inputs(root, hol)
+    generated = root / "ntt-bounds/generated"
+    for file in ("tap.ml", "intt_reduction.ml"):
+        if (generated.parent / file).read_bytes() != (bounds.HERE / file).read_bytes():
+            raise ValueError(f"cold observer/dependency changed: {file}")
+    warm = bounds.results()
+    rows = []
+    reduction = ("late-v21 reduction", "[-32768,32767]; max 32768 > 26624",
+                 "—", "NOT STARTED", "—")
+    for name in ORDER:
+        receipt = receipts / (name + ".receipt.md")
+        raw_path = receipts / (name + ".log")
+        cold, verdict = "—", "NOT STARTED"
+        if receipt.exists():
+            text = receipt.read_text()
+            if f"s2n-bignum {s2n}\nHOL Light {hol_commit}\n" not in text:
+                raise ValueError(f"{name}: receipt commit mismatch")
+            exit_match = re.search(r"; elapsed [0-9.]+ s; exit (-?\d+)\n", text)
+            if not exit_match:
+                raise ValueError(f"{name}: missing terminal exit status")
+            code = int(exit_match[1])
+            if code == 124:
+                verdict = f"NOT REPLAYED COLD ({args.timeout}s budget)"
+            elif code != 0:
+                verdict = f"FAIL (exit {code})"
+            else:
+                source = (root / "arm/proofs" / (name + ".ml")).read_text()
+                if (generated / (name + ".ml")).read_text() != instrument(source, name):
+                    raise ValueError(f"{name}: instrumented proof changed")
+                if (generated / (name + "_cold.ml")).read_text() != entry_source(source, name):
+                    raise ValueError(f"{name}: claim probes changed")
+                raw = raw_path.read_text()
+                try:
+                    _, lo, hi = judge(raw, name)
+                    cold = f"[{lo},{hi}]"
+                    verdict = comparison(warm[name], lo, hi)
+                    if name == "mlkem_intt":
+                        reduction = reduction_row(raw, receipt)
+                except ValueError as error:
+                    verdict = f"FAIL ({error})"
+            if name == "mlkem_intt" and reduction[3] == "NOT STARTED":
+                reduction = (reduction[0], reduction[1], "—",
+                             "NOT REPLAYED COLD (inverse replay incomplete)" if code == 124
+                             else "FAIL (inverse replay incomplete)", str(receipt))
+            # Preserve original commands and raw exit status; correct only the
+            # summary line after independently judging the terminal transcript.
+            first, rest = text.split("\n", 1)
+            elapsed = first[first.index("; elapsed "):]
+            if name == "mlkem_intt":
+                rest = re.sub(r"(?m)^Reduction:.*\n?", "", rest)
+                rest += f"\nReduction: {reduction[3]}; {reduction[2]}\n"
+            receipt.write_text(f"{verdict}: {name}; cold {cold}{elapsed}\n" + rest)
+        rows.append((name, f"[{warm[name]['lower']},{warm[name]['upper']}]",
+                     cold, verdict, str(receipt) if receipt.exists() else "—"))
+        print(f"{verdict}: {name} {cold}", flush=True)
+    rows.append(reduction)
+    report(args.report, rows, s2n, hol_commit, args.timeout, root, hol, receipts)
+    return summarize(rows)
 
 
 def report(path, rows, s2n, hol, timeout, root, holdir, receipt_root):
@@ -167,15 +267,8 @@ def replay(args):
         # Run the inverse row and its graph refutation in one fresh process.
         # The unchanged reduction leaf needs this exact instrumented source.
         (generated / (name + ".ml")).write_text(full)
-        suffix = ""
-        if name == "mlkem_intt":
-            suffix = ('needs "ntt-bounds/intt_reduction.ml";;\n'
-                      'if hyp NTT_INTT_WITHOUT_LATE_BARRETT_BOUNDS <> [] then\n'
-                      ' failwith "Cold reduction: hypotheses remain";;\n'
-                      'check_axioms ();;\n'
-                      'print_endline "NTT_COLD_REDUCTION_PASS 0";;\n')
         entry = generated / (name + "_cold.ml")
-        entry.write_text(f'needs "ntt-bounds/generated/{name}.ml";;\n' + suffix + probes(source, name))
+        entry.write_text(entry_source(source, name))
         binary = receipts / (name + ".native")
         # build-proof.sh prefixes both paths with arm/, so use relative paths.
         build = ["../tools/build-proof.sh", os.path.relpath(entry, root / "arm"),
@@ -197,9 +290,7 @@ def replay(args):
                 raw = raw_log.read_text()
                 _, lo, hi = judge(raw, name)
                 cold = f"[{lo},{hi}]"
-                observed = (0, 3328) if name == "mlkem_reduce" else (lo, hi)
-                same = observed == (int(warm[name]["lower"]), int(warm[name]["upper"]))
-                verdict = "PASS (same number)" if same else "PASS (NUMBER CHANGED)"
+                verdict = comparison(warm[name], lo, hi)
                 if name == "mlkem_intt":
                     rlo, rhi, nodes = judge_reduction(raw)
                     reduction = (rlo, rhi, nodes)
@@ -229,11 +320,7 @@ def replay(args):
             pending[-1] = ("late-v21 reduction", pending[-1][1], rc, rv, str(receipt))
             print(f"{rv}: late-v21 reduction {rc}", flush=True)
         report(args.report, pending, s2n, hol_commit, args.timeout, root, hol, receipts)
-    failures = [row for row in pending if row[3].startswith(("FAIL", "NUMBER CHANGED"))]
-    print(f"{'FAIL' if failures else 'PASS'}: cold replay report covers 14 ARM rows and the reduction; "
-          f"{sum(row[3].startswith('PASS') for row in pending)}/15 replayed; "
-          f"{sum(row[3].startswith('NOT REPLAYED') for row in pending)} budget exclusions", flush=True)
-    return 1 if failures else 0
+    return summarize(pending)
 
 
 def main():
@@ -243,11 +330,13 @@ def main():
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--report", type=Path, default=bounds.HERE / "COLD-REPLAY.md")
     parser.add_argument("--timeout", type=int, default=10800)
+    parser.add_argument("--collect-only", action="store_true",
+                        help="recheck saved terminal receipts; do not compile or run proofs")
     args = parser.parse_args()
     if args.timeout <= 0:
         parser.error("timeout must be positive")
     try:
-        return replay(args)
+        return collect(args) if args.collect_only else replay(args)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"FAIL: cold replay: {error}", flush=True)
         return 1

@@ -19,6 +19,10 @@ Receipts contain commands, both commits and log paths. COLD-REPLAY.md updates
 after each row, preserving the warm table; COMMENT.md changes only if a reported
 number changes. An existing receipt directory is refused to prevent accidental
 restarts. The command's tests are included in `make -C ntt-bounds test`.
+After the batch ends, add `--collect-only` to the same Python command to recheck
+the saved terminal receipts and refresh the report without compiling or replaying
+any proof. This also checks the current upstream sources and claim probes against
+the instrumented files retained with the receipts.
 
 This directory addresses [s2n-bignum #328](https://github.com/awslabs/s2n-bignum/issues/328)
 using the rule-observation method in [PR #321](https://github.com/awslabs/s2n-bignum/pull/321).
