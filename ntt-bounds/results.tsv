@@ -1,4 +1,5 @@
 name	count	lower	upper	fingerprint	receipt
+mlkem_basemul_k2	256	-9857	9857	ab253342ca3fe096d65dd98830731434e944cbb1cc7185927eadc1bd0efbdd9c	/home/bluestar/lanes/ntt-bounds/runs/mlkem_basemul_k2/20261005T010601Z-268181-mlkem_basemul_k2-7d6936/transcript.log.json
 mlkem_mulcache_compute	128	-3292	3292	1f93519f3b22800395f7aabbe428a9bc140d3999a8adbff02dd1fa834027013f	/home/bluestar/lanes/ntt-bounds/runs/mlkem_mulcache_compute/20261004T234841Z-189027-mlkem_mulcache_compute-0ed893/transcript.log.json
 mlkem_ntt	256	-23594	23594	246bb8459f7e975bf7838d8b9d31d2b11089d1a2b26713a1440ee514b0c1b3e7	/home/bluestar/lanes/ntt-bounds/runs/mlkem_ntt/20261004T235119Z-192046-mlkem_ntt-3e6a3d/transcript.log.json
 mlkem_reduce	1	-1664	1664	6a6caad283ae69b4c218050a9ffae7d00ccfc019f586d1a36ee57c684d140494	/home/bluestar/lanes/ntt-bounds/runs/mlkem_reduce/20261004T234508Z-187065-mlkem_reduce-c48700/transcript.log.json
