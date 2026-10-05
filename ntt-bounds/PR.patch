@@ -9,12 +9,10 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COMMENT.md b/ntt-bounds/COMMENT.md
 new file mode 100644
-index 00000000..02acc145
+index 00000000..0a283fd7
 --- /dev/null
 +++ b/ntt-bounds/COMMENT.md
-@@ -0,0 +1,39 @@
-+Draft: one ARM result is pending.
-+
+@@ -0,0 +1,37 @@
 +At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 +to pass with zero new axioms. These are interval bounds, not attainable extrema.
 +`make -C ntt-bounds table` checks coverage and prints the full table.
@@ -34,7 +32,7 @@ index 00000000..02acc145
 +| mlkem_ntt | 8191(2.4605q) | 23594(7.0874q) | 23594(7.0874q) |
 +| mlkem_reduce | S | [0,3328](0.9997q) | [0,3328](0.9997q) |
 +| mlkem_tomont | S | 3328(0.9997q) | 2653(0.7969q) |
-+| mldsa_intt | q−1 | q−1 | PENDING |
++| mldsa_intt | q−1 | q−1 | 6390410(0.7625q) |
 +| mldsa_ntt | q−1 | 9q−1 | 42163872(5.0312q) |
 +| mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 +| mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
@@ -81,7 +79,7 @@ index 00000000..3a488dd9
 +	@$(MAKE) reduction
 diff --git a/ntt-bounds/README.md b/ntt-bounds/README.md
 new file mode 100644
-index 00000000..dfe5afae
+index 00000000..83f804c9
 --- /dev/null
 +++ b/ntt-bounds/README.md
 @@ -0,0 +1,171 @@
@@ -95,8 +93,8 @@ index 00000000..dfe5afae
 +congruence and the reducer whose exact remainder result implies canonical bounds.
 +
 +`PR.patch` is the review copy of this directory's changes against the analysis
-+revision. The comment marks any pending proofs; refresh the patch after new
-+results are accepted. From the repository root:
++revision. It includes the complete ARM table and the reduction refutation.
++Refresh the patch after changing this directory. From the repository root:
 +
 +```sh
 +git diff --binary fce78c7c17baee6a60511efe821930d4d049a6c0 -- ntt-bounds ':!ntt-bounds/PR.patch' > ntt-bounds/PR.patch
@@ -804,11 +802,12 @@ index 00000000..32a2c172
 +  string_of_num ntt_intt_alternative_upper ^ " 26624");;
 diff --git a/ntt-bounds/results.tsv b/ntt-bounds/results.tsv
 new file mode 100644
-index 00000000..72c4892a
+index 00000000..b5aa44ac
 --- /dev/null
 +++ b/ntt-bounds/results.tsv
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,15 @@
 +name	count	lower	upper	fingerprint	receipt
++mldsa_intt	256	-6390410	6390410	3c05dd1659448916c76d039419588c122bcb0af5a36dfab67043093dba6647b5	/home/bluestar/lanes/ntt-bounds/runs/mldsa_intt/20261005T160255Z-754327-mldsa_intt-88faac/transcript.log.json
 +mldsa_ntt	256	-42163872	42163872	34ae831909cda00142d60492cae92fb3f47ac72815cff9c7a5017399f79437a4	/home/bluestar/lanes/ntt-bounds/runs/mldsa_ntt/20261005T135831Z-675075-mldsa_ntt-1146a5/transcript.log.json
 +mldsa_pointwise	256	-5514723	5514723	fcc776aba54ca52c8477b9c379bd782fd9fa9015235972e8e119d9627d4f2f41	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise/20261005T042120Z-390597-mldsa_pointwise-861f0b/transcript.log.json
 +mldsa_pointwise_acc_l4	256	-4778882	4778882	34ae58fdd33e459cc6f280a3c3aef158915f83edfcf7b9da1c381f862ffe91b9	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l4/20261005T043357Z-394299-mldsa_pointwise_acc_l4-9119a0/transcript.log.json

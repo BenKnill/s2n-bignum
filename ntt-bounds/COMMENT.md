@@ -1,5 +1,3 @@
-Draft: one ARM result is pending.
-
 At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 to pass with zero new axioms. These are interval bounds, not attainable extrema.
 `make -C ntt-bounds table` checks coverage and prints the full table.
@@ -19,7 +17,7 @@ relationships still apply.
 | mlkem_ntt | 8191(2.4605q) | 23594(7.0874q) | 23594(7.0874q) |
 | mlkem_reduce | S | [0,3328](0.9997q) | [0,3328](0.9997q) |
 | mlkem_tomont | S | 3328(0.9997q) | 2653(0.7969q) |
-| mldsa_intt | q−1 | q−1 | PENDING |
+| mldsa_intt | q−1 | q−1 | 6390410(0.7625q) |
 | mldsa_ntt | q−1 | 9q−1 | 42163872(5.0312q) |
 | mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 | mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |

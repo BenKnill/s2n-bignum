@@ -8,8 +8,8 @@ are covered, including the three base multiplications whose specs only state
 congruence and the reducer whose exact remainder result implies canonical bounds.
 
 `PR.patch` is the review copy of this directory's changes against the analysis
-revision. The comment marks any pending proofs; refresh the patch after new
-results are accepted. From the repository root:
+revision. It includes the complete ARM table and the reduction refutation.
+Refresh the patch after changing this directory. From the repository root:
 
 ```sh
 git diff --binary fce78c7c17baee6a60511efe821930d4d049a6c0 -- ntt-bounds ':!ntt-bounds/PR.patch' > ntt-bounds/PR.patch
