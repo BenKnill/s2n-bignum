@@ -9,7 +9,7 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COLD-REPLAY.md b/ntt-bounds/COLD-REPLAY.md
 new file mode 100644
-index 00000000..bbbdf1a0
+index 00000000..5ed380d9
 --- /dev/null
 +++ b/ntt-bounds/COLD-REPLAY.md
 @@ -0,0 +1,51 @@
@@ -48,7 +48,7 @@ index 00000000..bbbdf1a0
 +| mlkem_reduce | [-1664,1664] | [-1664,1664] | PASS (same number) | [mlkem_reduce](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.receipt.md) |
 +| mlkem_mulcache_compute | [-3292,3292] | [-3292,3292] | PASS (same number) | [mlkem_mulcache_compute](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.receipt.md) |
 +| mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.receipt.md) |
-+| mlkem_basemul_k2 | [-9857,9857] | — | NOT STARTED | [mlkem_basemul_k2](—) |
++| mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.receipt.md) |
 +| mlkem_basemul_k3 | [-13953,13953] | — | NOT STARTED | [mlkem_basemul_k3](—) |
 +| mlkem_basemul_k4 | [-18049,18049] | — | NOT STARTED | [mlkem_basemul_k4](—) |
 +| mlkem_intt | [-26624,26624] | — | NOT STARTED | [mlkem_intt](—) |
