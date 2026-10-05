@@ -1,4 +1,4 @@
-Draft: two ARM results are pending.
+Draft: one ARM result is pending.
 
 At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 to pass with zero new axioms. These are interval bounds, not attainable extrema.
@@ -20,7 +20,7 @@ relationships still apply.
 | mlkem_reduce | S | [0,3328](0.9997q) | [0,3328](0.9997q) |
 | mlkem_tomont | S | 3328(0.9997q) | 2653(0.7969q) |
 | mldsa_intt | q−1 | q−1 | PENDING |
-| mldsa_ntt | q−1 | 9q−1 | PENDING |
+| mldsa_ntt | q−1 | 9q−1 | 42163872(5.0312q) |
 | mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
 | mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
 | mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | 4926050(0.5878q) |

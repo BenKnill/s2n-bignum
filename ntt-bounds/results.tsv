@@ -1,4 +1,5 @@
 name	count	lower	upper	fingerprint	receipt
+mldsa_ntt	256	-42163872	42163872	34ae831909cda00142d60492cae92fb3f47ac72815cff9c7a5017399f79437a4	/home/bluestar/lanes/ntt-bounds/runs/mldsa_ntt/20261005T135831Z-675075-mldsa_ntt-1146a5/transcript.log.json
 mldsa_pointwise	256	-5514723	5514723	fcc776aba54ca52c8477b9c379bd782fd9fa9015235972e8e119d9627d4f2f41	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise/20261005T042120Z-390597-mldsa_pointwise-861f0b/transcript.log.json
 mldsa_pointwise_acc_l4	256	-4778882	4778882	34ae58fdd33e459cc6f280a3c3aef158915f83edfcf7b9da1c381f862ffe91b9	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l4/20261005T043357Z-394299-mldsa_pointwise_acc_l4-9119a0/transcript.log.json
 mldsa_pointwise_acc_l5	256	-4926050	4926050	5fdc0a708dbb539e2b6f3c317ba4bffa3d5b20572b5e7b434a1af4e629e30593	/home/bluestar/lanes/ntt-bounds/runs/mldsa_pointwise_acc_l5/20261005T055258Z-482956-mldsa_pointwise_acc_l5-9de9a9/transcript.log.json
