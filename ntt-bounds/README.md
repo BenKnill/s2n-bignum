@@ -72,8 +72,12 @@ bindings and the safety binding to pass with zero new axioms, checks the exact
 basis bytes, and keeps the original full-proof fingerprint. The replay retires
 the split basis after acceptance. Other functions retain their existing layout;
 accepted rows are reused. `generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
-also prepares the two files for a direct Hearth invocation. This layout remains
-pending a complete l7 replay; the local source-preservation and rejection tests pass.
+also prepares the two files for a direct Hearth invocation. The complete l7
+replay passed: two correctness bindings in 10019.5 seconds, then the safety
+binding in 440.0 seconds, each with zero new axioms, matched source conclusions
+and empty hypotheses. The collector accepted 256 output observations with
+interval [-5220386,5220386], and the basis was retired. Local source-preservation
+and rejection tests also pass.
 
 For `mlkem_reduce`, CONGBOUND supplies the centered intermediate; the proof then
 conditionally adds q to obtain its exact `x rem q` result. The table reports
