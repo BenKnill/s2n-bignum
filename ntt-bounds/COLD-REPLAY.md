@@ -35,7 +35,7 @@ in COMMENT.md. Warm values are those already published in the draft.
 | mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.receipt.md) |
 | mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.receipt.md) |
 | mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.receipt.md) |
-| mlkem_basemul_k4 | [-18049,18049] | — | NOT STARTED | [mlkem_basemul_k4](—) |
+| mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.receipt.md) |
 | mlkem_intt | [-26624,26624] | — | NOT STARTED | [mlkem_intt](—) |
 | mlkem_ntt | [-23594,23594] | — | NOT STARTED | [mlkem_ntt](—) |
 | mldsa_pointwise_acc_l4 | [-4778882,4778882] | — | NOT STARTED | [mldsa_pointwise_acc_l4](—) |
