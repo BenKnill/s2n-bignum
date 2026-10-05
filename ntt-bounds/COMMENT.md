@@ -1,4 +1,4 @@
-Draft: five ARM results and the reduction calculation are pending.
+Draft: four ARM results are pending.
 
 At `fce78c7`, I instrumented CONGBOUND's output and require each complete ARM proof
 to pass with zero new axioms. These are interval bounds, not attainable extrema.
@@ -22,15 +22,17 @@ relationships still apply.
 | mldsa_intt | q−1 | q−1 | PENDING |
 | mldsa_ntt | q−1 | 9q−1 | PENDING |
 | mldsa_pointwise | x,y:9q−1 | q−1 | 5514723(0.6580q) |
-| mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | PENDING |
+| mldsa_pointwise_acc_l4 | x:q−1;y:9q−1 | q−1 | 4778882(0.5702q) |
 | mldsa_pointwise_acc_l5 | x:q−1;y:9q−1 | q−1 | PENDING |
 | mldsa_pointwise_acc_l7 | x:q−1;y:9q−1 | q−1 | PENDING |
 
 The reducer's observed centered intermediate is [−1664,1664]; its exact-remainder
 postcondition gives the canonical result above.
 
-Reduction result: PENDING for removing the ARM inverse-NTT's late v21 Barrett
-reductions (64 scalar occurrences).
+Removing 64 late-v21 Barrett reductions gives interval S: max=32768(9.8432q)
+exceeds spec 26624(7.9976q). Four signed-word side conditions fail, requiring
+type-bound widening. This refutes the existing interval argument, not an
+attainable counterexample. The calculation passed with zero new axioms.
 
 x86 was not run; #321 reports 14939. Its inverse-NTT contract is <8q, versus
 ARM's ≤8q−8. At upstream `4d1356a7`, unchanged contracts and numeric rules suggest

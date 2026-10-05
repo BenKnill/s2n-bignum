@@ -100,9 +100,26 @@ The ARM candidate is the late `v21` reduction at lines 193/203/211 in the
 loop, with the tail at 239/242/245. It reduces a sum of two `barmul` results.
 `intt_reduction.ml` will evaluate the changed expression graph over the completed
 inverse-NTT basis, requiring exactly 64 matching coefficient occurrences. It
-does not introduce an axiom: changed local equations are explicit hypotheses.
+selects the final eight terms of each chronological group of 24 standalone
+reductions: Q29, Q9, then Q21. Earlier shuffled lanes can share the same operand
+shape, so a shape-only selector would include extra reductions. The two scratch
+registers in the loop (Q19/Q16) and the tail scratch register Q20 are overwritten
+before their next unrelated uses. There are seven loop blocks and one tail block;
+the candidate removes six static instructions and 24 dynamic instruction executions.
+The leaf also checks the selected terms' operand shape. It introduces no axiom:
+changed local equations are discharged into explicit implication premises.
 Its result must be interpreted as a bound-propagation test, not an unchanged-spec
-machine proof or an attainable counterexample. At present this leaf is unvalidated.
+machine proof or an attainable counterexample.
+Addition and subtraction use the original CONGBOUND lemmas while their signed-word
+side conditions hold. If the kernel reduces such a condition to false, the leaf
+uses CONGBOUND_ATOM's signed-word interval at that node and continues. It reports
+the number of these broadened nodes. This preserves valid interval theorems through
+possible wraparound; it does not preserve the original polynomial congruence there.
+The local Hearth calculation passed in 45.9 seconds with zero new axioms. Four
+side conditions became false; the resulting output interval is [-32768,32767],
+with maximum absolute bound 32768 (9.843196q), exceeding the unchanged 26624
+(7.997597q) specification. This rejects the current interval argument for the
+removal, without asserting an attainable counterexample or a machine-code proof.
 `make -C ntt-bounds analyze-reduction HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
 runs that leaf over the inverse-NTT basis. `make -C ntt-bounds reduction` reads its
 accepted receipt and prints the refutation row; a bound that fits the spec fails
