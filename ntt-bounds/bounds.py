@@ -122,7 +122,10 @@ def collect(hearth, run_root, name):
     if info["source_sha256"] != hashlib.sha256(entry_source(name).encode()).hexdigest():
         raise ValueError(f"{name}: receipt belongs to a different source")
     receipt = Path(info["receipt"])
-    check_observer_identity(json.loads(receipt.read_text()))
+    record = json.loads(receipt.read_text())
+    check_observer_identity(record)
+    if name == "mlkem_intt":
+        check_intt_graph_identity(record)
     raw = receipt.with_name("transcript.log.raw").read_text()
     count, lo, hi = read_result(raw, name)
     return dict(name=name, count=count, lower=lo, upper=hi,
@@ -135,6 +138,14 @@ def check_observer_identity(receipt):
                 if item["package_path"] == "ntt-bounds/tap.ml"]
     if recorded != [expected]:
         raise ValueError("receipt does not capture the current CONGBOUND observer")
+
+
+def check_intt_graph_identity(receipt):
+    expected = hashlib.sha256(instrument("mlkem_intt").encode()).hexdigest()
+    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
+                if item["package_path"] == "ntt-bounds/generated/mlkem_intt.ml"]
+    if recorded != [expected]:
+        raise ValueError("receipt does not capture the current inverse-NTT graph")
 
 
 def reduction_values(raw):
@@ -159,10 +170,7 @@ def reduction(args):
     receipt = Path(info["receipt"])
     record = json.loads(receipt.read_text())
     check_observer_identity(record)
-    graph = [f["sha256"] for f in record["dependency_package_files"]
-             if f["package_path"] == "ntt-bounds/generated/mlkem_intt.ml"]
-    if graph != [hashlib.sha256(instrument("mlkem_intt").encode()).hexdigest()]:
-        raise ValueError("reduction receipt does not capture the current inverse-NTT graph")
+    check_intt_graph_identity(record)
     lo, hi = reduction_values(receipt.with_name("transcript.log.raw").read_text())
     bound = max(abs(lo), abs(hi))
     if bound <= 26624:

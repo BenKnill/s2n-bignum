@@ -2,6 +2,7 @@ import unittest
 import json
 import hashlib
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -45,6 +46,25 @@ class ExtractionChecks(unittest.TestCase):
         for files in ([], [item, item], [dict(item, sha256="old-observer")]):
             with self.subTest(files=files), self.assertRaises(ValueError):
                 bounds.check_observer_identity(dict(dependency_package_files=files))
+
+    def test_intt_collection_checks_loaded_graph(self):
+        observer = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
+            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
+        graph = dict(package_path="ntt-bounds/generated/mlkem_intt.ml",
+                     sha256=hashlib.sha256(bounds.instrument("mlkem_intt").encode()).hexdigest())
+        with TemporaryDirectory() as directory:
+            receipt = Path(directory) / "transcript.log.json"
+            receipt.with_name("transcript.log.raw").write_text(
+                "NTT_BOUND_RESULT mlkem_intt 256 -123 123\n")
+            info = dict(verdict="passed", new_axioms=0, receipt=str(receipt),
+                        source_sha256=hashlib.sha256(bounds.entry_source("mlkem_intt").encode()).hexdigest())
+            with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
+                receipt.write_text(json.dumps(dict(dependency_package_files=[observer, graph])))
+                self.assertEqual(bounds.collect("hearth", Path(directory), "mlkem_intt")["upper"], "123")
+                for graphs in ([], [graph, graph], [dict(graph, sha256="old-graph")]):
+                    receipt.write_text(json.dumps(dict(dependency_package_files=[observer, *graphs])))
+                    with self.subTest(graphs=graphs), self.assertRaisesRegex(ValueError, "inverse-NTT graph"):
+                        bounds.collect("hearth", Path(directory), "mlkem_intt")
 
     def test_reduction_result_rejects_incomplete_or_wrong_graph_count(self):
         text = "NTT_REDUCTION_RESULT late-v21 64 -27000 27000 26624\n"
