@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PIN = "fce78c7c17baee6a60511efe821930d4d049a6c0"
 NTT_NAMES = {"mlkem_ntt", "mlkem_intt", "mldsa_ntt", "mldsa_intt"}
+SPLIT_NAMES = {"mldsa_pointwise_acc_l7"}
 LINEAR_IMPORT = '\nneeds "ntt-bounds/upstream_int_linear.ml";;'
 ORIGINAL_FINISH = """      REWRITE_TAC[INT_REM_EQ] THEN
       REWRITE_TAC[REAL_INT_CONGRUENCE; INT_OF_NUM_EQ; ARITH_EQ] THEN
@@ -87,22 +88,43 @@ def accepted_fingerprints(name):
     return {fingerprint(name, mode) for mode in replay_modes(name)}
 
 
-def entry_source(name, linear=False):
+def split_sources(name, linear=False):
+    if name not in SPLIT_NAMES:
+        raise ValueError(f"{name}: safety split is not supported")
+    source = instrument(name, linear)
+    marker = 'needs "arm/proofs/consttime.ml";;'
+    if source.count(marker) != 1:
+        raise ValueError(f"{name}: safety import boundary changed")
+    index = source.index(marker)
+    return source[:index], source[index:]
+
+
+def entry_source(name, linear=False, split_safety=False):
+    if split_safety and name in SPLIT_NAMES:
+        _, suffix = split_sources(name, linear)
+        return f'needs "ntt-bounds/generated/{name}_basis.ml";;\n' + suffix
     if name == "mlkem_intt":
         return ('needs "ntt-bounds/generated/mlkem_intt.ml";;\n'
                 'ntt_bounds_finish "mlkem_intt" 256;;\n')
     return instrument(name, linear)
 
 
-def entry_path(name):
+def entry_path(name, split_safety=False):
+    if split_safety and name in SPLIT_NAMES:
+        return HERE / "generated" / (name + "_safe.ml")
     return HERE / "generated" / (name + ("_result" if name == "mlkem_intt" else "") + ".ml")
 
 
-def generate(names, linear=False):
+def generate(names, linear=False, split_safety=False):
     check_sources()
     out = HERE / "generated"
     out.mkdir(exist_ok=True)
     for name in names:
+        if split_safety and name in SPLIT_NAMES:
+            prefix, _ = split_sources(name, linear)
+            (out / (name + "_basis.ml")).write_text(prefix)
+            entry_path(name, True).write_text(entry_source(name, linear, True))
+            continue
         path = out / (name + ".ml")
         text = instrument(name, linear)
         if not path.exists() or path.read_text() != text:
@@ -141,14 +163,27 @@ def collect(hearth, run_root, name):
                           capture_output=True).stdout)
     if info["verdict"] != "passed" or info["new_axioms"] != 0:
         raise ValueError(f"{name}: Hearth did not accept complete source with 0 new axioms")
-    modes = [mode for mode in replay_modes(name)
-             if info["source_sha256"] == hashlib.sha256(entry_source(name, mode).encode()).hexdigest()]
+    modes = [(mode, split) for mode in replay_modes(name)
+             for split in ((False, True) if name in SPLIT_NAMES else (False,))
+             if info["source_sha256"] == hashlib.sha256(entry_source(name, mode, split).encode()).hexdigest()]
     if not modes:
         raise ValueError(f"{name}: receipt belongs to a different source")
-    linear = modes[0]
+    linear, split_safety = modes[0]
     receipt = Path(info["receipt"])
     record = json.loads(receipt.read_text())
     check_observer_identity(record)
+    if split_safety:
+        expected = check_split_basis_identity(record, name, linear)
+        preparation = record["project_basis"]["preparation_receipt"]
+        basis_info = json.loads(run([hearth, "inspect", preparation, "--json"],
+                                    capture_output=True).stdout)
+        expected_names = {name.upper() + "_CORRECT", name.upper() + "_SUBROUTINE_CORRECT"}
+        if (basis_info["verdict"] != "passed" or basis_info["new_axioms"] != 0 or
+                basis_info["source_sha256"] != expected or
+                basis_info["bindings_proved"] != 2 or basis_info["bindings_total"] != 2 or
+                {b["name"] for b in basis_info["bindings"]} != expected_names or
+                info["bindings_proved"] != 1 or info["bindings_total"] != 1):
+            raise ValueError(f"{name}: split correctness and safety proofs were not both accepted")
     if name == "mlkem_intt":
         linear = check_intt_graph_identity(record)
     elif linear:
@@ -165,6 +200,16 @@ def check_observer_identity(receipt):
                 if item["package_path"] == "ntt-bounds/tap.ml"]
     if recorded != [expected]:
         raise ValueError("receipt does not capture the current CONGBOUND observer")
+
+
+def check_split_basis_identity(receipt, name, linear=False):
+    prefix, _ = split_sources(name, linear)
+    expected = hashlib.sha256(prefix.encode()).hexdigest()
+    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
+                if item["package_path"] == f"ntt-bounds/generated/{name}_basis.ml"]
+    if recorded != [expected]:
+        raise ValueError(f"{name}: receipt does not capture the unchanged correctness basis")
+    return expected
 
 
 def check_intt_graph_identity(receipt):
@@ -244,7 +289,8 @@ def replay(args):
     saved = results()
     pending = [n for n in names
                if n not in saved or saved[n]["fingerprint"] not in accepted_fingerprints(n)]
-    generate(pending, args.linear)
+    split_safety = getattr(args, "split_safety", False)
+    generate(pending, args.linear, split_safety)
     for name in names:
         if name in saved and saved[name]["fingerprint"] in accepted_fingerprints(name):
             print(f"PASS: {name} already extracted; source unchanged", flush=True)
@@ -253,12 +299,17 @@ def replay(args):
         run(["make", "-C", "arm", f"{family}/{name}.o"], cwd=ROOT)
         basis = (["--basis", str(HERE / "generated/mlkem_intt.ml"),
                   "--basis-cache-root", str(args.run_root)] if name == "mlkem_intt" else [])
-        run([args.hearth, "prove", str(entry_path(name)), *basis,
+        if split_safety and name in SPLIT_NAMES:
+            basis = ["--basis", str(HERE / "generated" / (name + "_basis.ml")),
+                     "--basis-cache-root", str(args.run_root)]
+        run([args.hearth, "prove", str(entry_path(name, split_safety)), *basis,
              "--profile", "s2n-arm-mlkem", "--timeout", str(args.timeout),
              "--run-root", str(args.run_root / name)], cwd=ROOT)
         saved[name] = collect(args.hearth, args.run_root, name)
         save_results(saved)
         print(f"PASS: {name} bounds {saved[name]['lower']}..{saved[name]['upper']}", flush=True)
+        if split_safety and name in SPLIT_NAMES:
+            run([args.hearth, "basis", "retire", "--all", "--cache-root", str(args.run_root)])
 
 
 def multiples(text, q):
@@ -305,12 +356,14 @@ def main():
     generator = sub.add_parser("generate")
     generator.add_argument("names", nargs="*")
     generator.add_argument("--linear", action="store_true")
+    generator.add_argument("--split-safety", action="store_true")
     for command in ("replay", "collect", "reduction"):
         p = sub.add_parser(command)
         if command != "reduction":
             p.add_argument("names", nargs="*" if command == "replay" else "+")
         if command == "replay":
             p.add_argument("--linear", action="store_true")
+            p.add_argument("--split-safety", action="store_true")
         p.add_argument("--hearth", default=os.environ.get("HEARTH", "hearth"))
         p.add_argument("--run-root", type=Path, required=True)
         p.add_argument("--timeout", type=int, default=7200)
@@ -324,7 +377,7 @@ def main():
         if args.command == "table":
             table()
         elif args.command == "generate":
-            generate(args.names or sorted(SPECS), args.linear)
+            generate(args.names or sorted(SPECS), args.linear, args.split_safety)
         elif args.command == "collect":
             collect_results(args)
         elif args.command == "reduction":

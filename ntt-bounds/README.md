@@ -56,6 +56,25 @@ The expected number of output calls is checked; a malformed theorem or changed
 source is an error. Unit checks cover source preservation and malformed/incomplete
 result rejection. These are interval bounds, not claims of attainable extrema.
 
+The l7 accumulation replay exceeded a 7200-second budget during core simulation.
+`SPLIT_SAFETY=1` separates that function at its existing constant-time import:
+the correctness and subroutine theorems form a checked basis, and the unchanged
+safety theorem and result marker form a leaf. Concatenating the two source pieces
+recovers the complete instrumented proof, with every statement and tactic intact.
+For example:
+
+```sh
+make -C ntt-bounds replay SPLIT_SAFETY=1 TIMEOUT=14400 FUNCTIONS=mldsa_pointwise_acc_l7 HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs
+```
+
+`TIMEOUT` bounds each phase independently. The collector requires both correctness
+bindings and the safety binding to pass with zero new axioms, checks the exact
+basis bytes, and keeps the original full-proof fingerprint. The replay retires
+the split basis after acceptance. Other functions retain their existing layout;
+accepted rows are reused. `generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
+also prepares the two files for a direct Hearth invocation. This layout remains
+pending a complete l7 replay; the local source-preservation and rejection tests pass.
+
 For `mlkem_reduce`, CONGBOUND supplies the centered intermediate; the proof then
 conditionally adds q to obtain its exact `x rem q` result. The table reports
 the resulting canonical range and labels the observed intermediate explicitly.

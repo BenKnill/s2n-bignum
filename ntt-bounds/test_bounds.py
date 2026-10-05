@@ -49,14 +49,14 @@ class ExtractionChecks(unittest.TestCase):
              patch.object(bounds, "generate") as generate, \
              patch.object(bounds, "run") as run, contextlib.redirect_stdout(io.StringIO()):
             bounds.replay(args)
-        generate.assert_called_once_with([], True)
+        generate.assert_called_once_with([], True, False)
         run.assert_not_called()
 
     def test_generate_cli_selects_only_named_proofs(self):
         with patch("sys.argv", ["bounds.py", "generate", "--linear", "mlkem_intt"]), \
              patch.object(bounds, "generate") as generate:
             self.assertEqual(bounds.main(), 0)
-        generate.assert_called_once_with(["mlkem_intt"], True)
+        generate.assert_called_once_with(["mlkem_intt"], True, False)
         with patch("sys.argv", ["bounds.py", "generate", "unknown"]), \
              patch.object(bounds, "generate") as generate, contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(bounds.main(), 1)
@@ -66,6 +66,62 @@ class ExtractionChecks(unittest.TestCase):
         with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 bounds.table()
+
+    def test_safety_split_preserves_all_statements_and_tactics(self):
+        name = "mldsa_pointwise_acc_l7"
+        prefix, suffix = bounds.split_sources(name)
+        self.assertEqual(prefix + suffix, bounds.instrument(name))
+        self.assertIn("let MLDSA_POINTWISE_ACC_L7_CORRECT = prove", prefix)
+        self.assertIn("let MLDSA_POINTWISE_ACC_L7_SUBROUTINE_CORRECT = prove", prefix)
+        self.assertNotIn("let MLDSA_POINTWISE_ACC_L7_SUBROUTINE_SAFE", prefix)
+        self.assertIn("let MLDSA_POINTWISE_ACC_L7_SUBROUTINE_SAFE = time prove", suffix)
+        self.assertEqual(bounds.entry_source(name, split_safety=True),
+                         f'needs "ntt-bounds/generated/{name}_basis.ml";;\n' + suffix)
+        with self.assertRaises(ValueError):
+            bounds.split_sources("mlkem_tomont")
+
+    def test_split_basis_identity_rejects_stale_missing_and_duplicate_files(self):
+        name = "mldsa_pointwise_acc_l7"
+        prefix, _ = bounds.split_sources(name)
+        item = dict(package_path=f"ntt-bounds/generated/{name}_basis.ml",
+                    sha256=hashlib.sha256(prefix.encode()).hexdigest())
+        bounds.check_split_basis_identity(dict(dependency_package_files=[item]), name)
+        for files in ([], [item, item], [dict(item, sha256="stale")]):
+            with self.subTest(files=files), self.assertRaises(ValueError):
+                bounds.check_split_basis_identity(dict(dependency_package_files=files), name)
+
+    def test_split_collection_requires_both_checked_phases(self):
+        name = "mldsa_pointwise_acc_l7"
+        prefix, _ = bounds.split_sources(name)
+        prefix_sha = hashlib.sha256(prefix.encode()).hexdigest()
+        observer = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
+            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
+        basis = dict(package_path=f"ntt-bounds/generated/{name}_basis.ml", sha256=prefix_sha)
+        with TemporaryDirectory() as directory:
+            receipt = Path(directory) / "transcript.log.json"
+            receipt.write_text(json.dumps(dict(dependency_package_files=[observer, basis],
+                project_basis=dict(preparation_receipt="basis-receipt.json"))))
+            receipt.with_name("transcript.log.raw").write_text(
+                f"NTT_BOUND_RESULT {name} 256 -5000000 5000000\n")
+            leaf = dict(verdict="passed", new_axioms=0, receipt=str(receipt),
+                source_sha256=hashlib.sha256(bounds.entry_source(name, split_safety=True).encode()).hexdigest(),
+                bindings_proved=1, bindings_total=1)
+            prepared = dict(verdict="passed", new_axioms=0, source_sha256=prefix_sha,
+                bindings_proved=2, bindings_total=2, bindings=[
+                    dict(name=name.upper() + "_CORRECT"),
+                    dict(name=name.upper() + "_SUBROUTINE_CORRECT")])
+            for changed in ({}, dict(verdict="incomplete"), dict(new_axioms=1),
+                            dict(source_sha256="stale"), dict(bindings_proved=1)):
+                with patch.object(bounds, "run", side_effect=[
+                        SimpleNamespace(stdout=json.dumps(leaf)),
+                        SimpleNamespace(stdout=json.dumps(dict(prepared, **changed)))]):
+                    if changed:
+                        with self.subTest(changed=changed), self.assertRaises(ValueError):
+                            bounds.collect("hearth", Path(directory), name)
+                    else:
+                        row = bounds.collect("hearth", Path(directory), name)
+                        self.assertEqual(row["upper"], "5000000")
+                        self.assertEqual(row["fingerprint"], bounds.fingerprint(name))
 
     def test_collect_rejects_incomplete_axioms_and_stale_source(self):
         for verdict, axioms, source in (("incomplete", 0, ""), ("passed", 1, ""),
