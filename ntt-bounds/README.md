@@ -1,5 +1,25 @@
 # ML-KEM / ML-DSA bound extraction
 
+For the separate cold check on fresh upstream main, clone upstream and HOL Light
+into a new directory, check out the HOL commit in upstream's
+`.github/workflows/ci.yml`, and run `HOLLIGHT_USE_MODULE=1 make` in that fresh HOL
+checkout through `lane-run --wait`. Then, from this repository root:
+
+```sh
+~/lanes/bin/lane-run --wait ntt-bounds-cold-claims ntt-bounds/.venv/bin/python ntt-bounds/cold_replay.py --checkout /path/to/fresh/s2n-bignum --hol /path/to/fresh/hol-light --run-root /path/to/new/receipts --report ntt-bounds/COLD-REPLAY.md --timeout 10800
+```
+
+The command uses upstream's native proof builder, preserves main's statements
+and tactics, and runs every row in a fresh process without Hearth or warm shelves.
+It checks all three final source quotations, empty hypotheses, the standard HOL
+axioms and the observer's complete result. The inverse-NTT process also performs
+the existing reduction calculation. Each row has a three-hour budget including
+compilation; a timeout is reported as NOT REPLAYED COLD and later rows continue.
+Receipts contain commands, both commits and log paths. COLD-REPLAY.md updates
+after each row, preserving the warm table; COMMENT.md changes only if a reported
+number changes. An existing receipt directory is refused to prevent accidental
+restarts. The command's tests are included in `make -C ntt-bounds test`.
+
 This directory addresses [s2n-bignum #328](https://github.com/awslabs/s2n-bignum/issues/328)
 using the rule-observation method in [PR #321](https://github.com/awslabs/s2n-bignum/pull/321).
 The analysis revision is `fce78c7c17baee6a60511efe821930d4d049a6c0`, matching the

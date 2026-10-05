@@ -3,7 +3,7 @@ HEARTH ?= hearth
 RUN_ROOT ?= $(HOME)/lanes/ntt-bounds/runs
 TIMEOUT ?= 7200
 
-.PHONY: table generate replay test check-linear reduction analyze-reduction
+.PHONY: table generate replay test check-linear reduction analyze-reduction cold-replay
 table:
 	@$(PYTHON) bounds.py table
 generate:
@@ -11,7 +11,9 @@ generate:
 replay:
 	@$(PYTHON) bounds.py replay --hearth $(HEARTH) --run-root $(RUN_ROOT) --timeout $(TIMEOUT) $(if $(LINEAR),--linear,) $(if $(SPLIT_SAFETY),--split-safety,) $(FUNCTIONS)
 test:
-	@$(PYTHON) -m unittest -v test_bounds.py
+	@$(PYTHON) -m unittest -v test_bounds.py test_cold_replay.py
+cold-replay:
+	@$(PYTHON) cold_replay.py --checkout $(CHECKOUT) --hol $(HOLDIR) --run-root $(RUN_ROOT) --report COLD-REPLAY.md --timeout $(if $(COLD_TIMEOUT),$(COLD_TIMEOUT),10800)
 check-linear:
 	@$(HEARTH) prove check_linear.ml --profile light --timeout 120 --run-root $(RUN_ROOT)/linear-check
 reduction:
