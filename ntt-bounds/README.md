@@ -26,8 +26,8 @@ make -C ntt-bounds replay HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs
 
 This compiles the real ARM objects using the repository Makefile, generates
 instrumented copies in `generated/`, and checks each complete proof through
-Hearth. `FUNCTIONS='mlkem_tomont mlkem_reduce'` selects a subset. Already
-accepted, unchanged rows are reused. Keep the Hearth run directories: each row
+Hearth. `FUNCTIONS='mlkem_tomont mlkem_reduce'` selects a subset for `replay` or
+`generate`. Accepted, unchanged rows are reused. Keep the Hearth run directories: each row
 records its receipt. On bluestar26, run long commands through
 `~/lanes/bin/lane-run --wait`, or use `~/lanes/bin/lane-wait UNIT` for an existing
 job; the K-backed native Linux filesystem is appropriate
@@ -70,8 +70,9 @@ run until a suitable profile is available.
 `upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
 `f6c3644561e1cb1a594fef5d0dec35e4d7551081`. Enable this alternative finishing
 tactic with `make -C ntt-bounds replay LINEAR=1 HEARTH=/path/to/hearth
-RUN_ROOT=/path/to/runs`. `generate LINEAR=1` prepares the same variant for direct
-Hearth commands. This applies upstream's exact congruence-finisher replacement
+RUN_ROOT=/path/to/runs`. `generate LINEAR=1 FUNCTIONS=mlkem_intt` prepares just the
+inverse-NTT variant for direct Hearth commands. This applies upstream's exact
+congruence-finisher replacement
 to the four NTT proofs, keeping the pinned statements and range branches.
 The collector verifies the helper hash for this mode, including the inverse-NTT
 basis dependency. Accepted rows from either mode are reused without regenerating

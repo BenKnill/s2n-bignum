@@ -52,6 +52,16 @@ class ExtractionChecks(unittest.TestCase):
         generate.assert_called_once_with([], True)
         run.assert_not_called()
 
+    def test_generate_cli_selects_only_named_proofs(self):
+        with patch("sys.argv", ["bounds.py", "generate", "--linear", "mlkem_intt"]), \
+             patch.object(bounds, "generate") as generate:
+            self.assertEqual(bounds.main(), 0)
+        generate.assert_called_once_with(["mlkem_intt"], True)
+        with patch("sys.argv", ["bounds.py", "generate", "unknown"]), \
+             patch.object(bounds, "generate") as generate, contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(bounds.main(), 1)
+        generate.assert_not_called()
+
     def test_table_refuses_missing_results(self):
         with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):
             with self.assertRaisesRegex(ValueError, "incomplete"):

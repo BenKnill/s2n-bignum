@@ -302,7 +302,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("table")
-    sub.add_parser("generate").add_argument("--linear", action="store_true")
+    generator = sub.add_parser("generate")
+    generator.add_argument("names", nargs="*")
+    generator.add_argument("--linear", action="store_true")
     for command in ("replay", "collect", "reduction"):
         p = sub.add_parser(command)
         if command != "reduction":
@@ -316,13 +318,13 @@ def main():
     try:
         if hasattr(args, "run_root"):
             args.run_root = args.run_root.resolve()
-            unknown = set(getattr(args, "names", [])) - SPECS.keys()
-            if unknown:
-                raise ValueError("unknown functions: " + ", ".join(sorted(unknown)))
+        unknown = set(getattr(args, "names", [])) - SPECS.keys()
+        if unknown:
+            raise ValueError("unknown functions: " + ", ".join(sorted(unknown)))
         if args.command == "table":
             table()
         elif args.command == "generate":
-            generate(sorted(SPECS), args.linear)
+            generate(args.names or sorted(SPECS), args.linear)
         elif args.command == "collect":
             collect_results(args)
         elif args.command == "reduction":
