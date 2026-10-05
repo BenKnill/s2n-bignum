@@ -29,7 +29,8 @@ instrumented copies in `generated/`, and checks each complete proof through
 Hearth. `FUNCTIONS='mlkem_tomont mlkem_reduce'` selects a subset. Already
 accepted, unchanged rows are reused. Keep the Hearth run directories: each row
 records its receipt. On bluestar26, run long commands through
-`~/lanes/bin/lane-run`; the K-backed native Linux filesystem is appropriate
+`~/lanes/bin/lane-run --wait`, or use `~/lanes/bin/lane-wait UNIT` for an existing
+job; the K-backed native Linux filesystem is appropriate
 for runs and proof caches. No GitHub CI is needed.
 
 `tap.ml` shadows the public rule entrypoints after loading the real machinery.
@@ -51,12 +52,26 @@ constants and functional cache relationships remain as in the linked source spec
 Upstream main inspected on 2026-10-04 is `4d1356a7470663c752660a59375dc3a9ef548428`.
 The four ARM NTT files change only the final congruence tactic (to
 `INT_LINEAR_CONG_TAC`) and its import. The other ten target proofs are unchanged.
+[The tactic change](https://github.com/awslabs/s2n-bignum/commit/f6c3644561e1cb1a594fef5d0dec35e4d7551081)
+avoids converting each expanded coefficient expression through real arithmetic;
+the range branches and theorem statements remain unchanged. This extraction
+currently uses the original pinned proof, including its congruence tactic.
 The shared machinery factors recursion into `ASM_CONGBOUND_STEP` and adds a
 memoized variant, and factors the SIMD simplification helper without changing its
 ARM body; the numeric reduction lemmas are unchanged. Later ARM polynomial
-proofs do not call CONGBOUND. The table is measured at the pin; applicability to
-upstream will be assessed against these source changes, not claimed as an upstream
-replay. x86 is explicitly not run until a suitable profile is available.
+proofs do not call CONGBOUND. These changes preserve the bound expressions and
+numeric rules used by the 14 target proofs, so the same intervals are expected
+at that upstream revision. This is an inference from source comparison: the
+table is measured at the pin, without an upstream replay. x86 is explicitly not
+run until a suitable profile is available.
+
+`upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
+`f6c3644561e1cb1a594fef5d0dec35e4d7551081`. It is prepared as a fallback for the
+expensive congruence finishing phase, and is not used by the current extraction.
+`make -C ntt-bounds check-linear HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
+checks its compatibility on two simple congruences, for q=3329 and q=8380417,
+using the light profile. These auxiliary checks do not establish NTT correctness
+or any output bound; a complete function replay remains required.
 
 The inverse-NTT contracts differ: ARM requires `abs(z) <= 26624` (`8q-8`),
 whereas x86 requires `abs(z) <= 26631` (equivalently `<26632`, or `<8q`). Both permit arbitrary signed
@@ -83,7 +98,7 @@ accepted receipt and prints the refutation row; a bound that fits the spec fails
 this refutation gate and requires the assembly proof and M5 timing route instead.
 
 For durable lane execution, the inverse-NTT basis can be prepared directly with
-`lane-run UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
+`lane-run --wait UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
 --basis ntt-bounds/generated/mlkem_intt.ml --basis-cache-root /path/to/runs
 --profile s2n-arm-mlkem --timeout 7200 --run-root /path/to/runs/mlkem_intt`.
 After it passes, `bounds.py collect mlkem_intt --hearth /path/to/hearth
