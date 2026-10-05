@@ -6,9 +6,9 @@ RUN_ROOT ?= $(HOME)/lanes/ntt-bounds/runs
 table:
 	@$(PYTHON) bounds.py table
 generate:
-	@$(PYTHON) bounds.py generate
+	@$(PYTHON) bounds.py generate $(if $(LINEAR),--linear,)
 replay:
-	@$(PYTHON) bounds.py replay --hearth $(HEARTH) --run-root $(RUN_ROOT) $(FUNCTIONS)
+	@$(PYTHON) bounds.py replay --hearth $(HEARTH) --run-root $(RUN_ROOT) $(if $(LINEAR),--linear,) $(FUNCTIONS)
 test:
 	@$(PYTHON) -m unittest -v test_bounds.py
 check-linear:

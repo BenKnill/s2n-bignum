@@ -13,6 +13,13 @@ import sys
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PIN = "fce78c7c17baee6a60511efe821930d4d049a6c0"
+NTT_NAMES = {"mlkem_ntt", "mlkem_intt", "mldsa_ntt", "mldsa_intt"}
+LINEAR_IMPORT = '\nneeds "ntt-bounds/upstream_int_linear.ml";;'
+ORIGINAL_FINISH = """      REWRITE_TAC[INT_REM_EQ] THEN
+      REWRITE_TAC[REAL_INT_CONGRUENCE; INT_OF_NUM_EQ; ARITH_EQ] THEN
+      REWRITE_TAC[GSYM REAL_OF_INT_CLAUSES] THEN
+      CONV_TAC(RAND_CONV REAL_POLY_CONV) THEN REAL_INTEGER_TAC;"""
+LINEAR_FINISH = "      REWRITE_TAC[INT_REM_EQ] THEN INT_LINEAR_CONG_TAC;"
 # name: number of output-rule calls, input contract, output contract
 # The canonical reduce result follows from its exact remainder postcondition;
 # its single CONGBOUND call is the centered intermediate, explicitly labelled.
@@ -49,44 +56,59 @@ def check_sources():
          "arm/mlkem", "arm/mldsa", "include"], cwd=ROOT, capture_output=True)
 
 
-def instrument(name):
+def instrument(name, linear=False):
     source = (ROOT / "arm/proofs" / (name + ".ml")).read_text()
     marker = 'needs "common/mlkem_mldsa.ml";;'
     if source.count(marker) != 1:
         raise ValueError(f"{name}: shared machinery import changed")
-    # Keep proof statements and tactics intact. The observer shadows only the
-    # three public rule entrypoints, immediately after the real imports.
+    # The observer shadows only the public rule entrypoints. Original mode
+    # preserves every tactic; linear mode changes only the finishing branch.
     source = source.replace(marker, marker + '\nneeds "ntt-bounds/tap.ml";;')
+    if linear and name in NTT_NAMES:
+        if source.count(ORIGINAL_FINISH) != 1:
+            raise ValueError(f"{name}: congruence finishing branch changed")
+        source = source.replace(marker, marker + LINEAR_IMPORT)
+        source = source.replace(ORIGINAL_FINISH, LINEAR_FINISH)
     return source + f'\nntt_bounds_finish "{name}" {SPECS[name][0]};;\n'
 
 
-def fingerprint(name):
-    return hashlib.sha256((PIN + instrument(name) +
-                           (HERE / "tap.ml").read_text()).encode()).hexdigest()
+def fingerprint(name, linear=False):
+    dependency = ((HERE / "upstream_int_linear.ml").read_text()
+                  if linear and name in NTT_NAMES else "")
+    return hashlib.sha256((PIN + instrument(name, linear) +
+                           (HERE / "tap.ml").read_text() + dependency).encode()).hexdigest()
 
 
-def entry_source(name):
+def replay_modes(name):
+    return (False, True) if name in NTT_NAMES else (False,)
+
+
+def accepted_fingerprints(name):
+    return {fingerprint(name, mode) for mode in replay_modes(name)}
+
+
+def entry_source(name, linear=False):
     if name == "mlkem_intt":
         return ('needs "ntt-bounds/generated/mlkem_intt.ml";;\n'
                 'ntt_bounds_finish "mlkem_intt" 256;;\n')
-    return instrument(name)
+    return instrument(name, linear)
 
 
 def entry_path(name):
     return HERE / "generated" / (name + ("_result" if name == "mlkem_intt" else "") + ".ml")
 
 
-def generate(names):
+def generate(names, linear=False):
     check_sources()
     out = HERE / "generated"
     out.mkdir(exist_ok=True)
     for name in names:
         path = out / (name + ".ml")
-        text = instrument(name)
+        text = instrument(name, linear)
         if not path.exists() or path.read_text() != text:
             path.write_text(text)
         if name == "mlkem_intt":
-            entry_path(name).write_text(entry_source(name))
+            entry_path(name).write_text(entry_source(name, linear))
     print(f"PASS: generated {len(names)} instrumented proofs at {PIN[:12]}")
 
 
@@ -119,17 +141,22 @@ def collect(hearth, run_root, name):
                           capture_output=True).stdout)
     if info["verdict"] != "passed" or info["new_axioms"] != 0:
         raise ValueError(f"{name}: Hearth did not accept complete source with 0 new axioms")
-    if info["source_sha256"] != hashlib.sha256(entry_source(name).encode()).hexdigest():
+    modes = [mode for mode in replay_modes(name)
+             if info["source_sha256"] == hashlib.sha256(entry_source(name, mode).encode()).hexdigest()]
+    if not modes:
         raise ValueError(f"{name}: receipt belongs to a different source")
+    linear = modes[0]
     receipt = Path(info["receipt"])
     record = json.loads(receipt.read_text())
     check_observer_identity(record)
     if name == "mlkem_intt":
-        check_intt_graph_identity(record)
+        linear = check_intt_graph_identity(record)
+    elif linear:
+        check_linear_identity(record)
     raw = receipt.with_name("transcript.log.raw").read_text()
     count, lo, hi = read_result(raw, name)
     return dict(name=name, count=count, lower=lo, upper=hi,
-                fingerprint=fingerprint(name), receipt=str(receipt))
+                fingerprint=fingerprint(name, linear), receipt=str(receipt))
 
 
 def check_observer_identity(receipt):
@@ -141,11 +168,23 @@ def check_observer_identity(receipt):
 
 
 def check_intt_graph_identity(receipt):
-    expected = hashlib.sha256(instrument("mlkem_intt").encode()).hexdigest()
     recorded = [item["sha256"] for item in receipt["dependency_package_files"]
                 if item["package_path"] == "ntt-bounds/generated/mlkem_intt.ml"]
+    for linear in replay_modes("mlkem_intt"):
+        expected = hashlib.sha256(instrument("mlkem_intt", linear).encode()).hexdigest()
+        if recorded == [expected]:
+            if linear:
+                check_linear_identity(receipt)
+            return linear
+    raise ValueError("receipt does not capture the current inverse-NTT graph")
+
+
+def check_linear_identity(receipt):
+    expected = hashlib.sha256((HERE / "upstream_int_linear.ml").read_bytes()).hexdigest()
+    recorded = [item["sha256"] for item in receipt["dependency_package_files"]
+                if item["package_path"] == "ntt-bounds/upstream_int_linear.ml"]
     if recorded != [expected]:
-        raise ValueError("receipt does not capture the current inverse-NTT graph")
+        raise ValueError("receipt does not capture the current linear congruence tactic")
 
 
 def reduction_values(raw):
@@ -202,10 +241,12 @@ def collect_results(args):
 
 def replay(args):
     names = args.names or sorted(SPECS, key=lambda n: (n == "mlkem_intt", n))
-    generate(names)
     saved = results()
+    pending = [n for n in names
+               if n not in saved or saved[n]["fingerprint"] not in accepted_fingerprints(n)]
+    generate(pending, args.linear)
     for name in names:
-        if name in saved and saved[name]["fingerprint"] == fingerprint(name):
+        if name in saved and saved[name]["fingerprint"] in accepted_fingerprints(name):
             print(f"PASS: {name} already extracted; source unchanged", flush=True)
             continue
         family = name.split("_")[0]
@@ -227,7 +268,7 @@ def multiples(text, q):
 def table():
     check_sources()
     saved = results()
-    missing = [n for n in SPECS if n not in saved or saved[n]["fingerprint"] != fingerprint(n)]
+    missing = [n for n in SPECS if n not in saved or saved[n]["fingerprint"] not in accepted_fingerprints(n)]
     if missing:
         raise ValueError("table incomplete or stale: " + ", ".join(missing))
     lines = []
@@ -248,6 +289,8 @@ def table():
                  f"[{lo}, {hi}]{label}", f"{max(abs(lo),abs(hi))/q:.6f}q")
         lines.append("| " + " | ".join(c.replace("|", r"\|") for c in cells) + " |")
     print(f"PASS: table covers all {len(SPECS)} ARM CONGBOUND proofs at {PIN[:12]}; x86 NOT RUN")
+    linear_count = sum(saved[n]["fingerprint"] == fingerprint(n, True) for n in NTT_NAMES)
+    print(f"NTT congruence finishing tactic: {linear_count}/4 upstream linear; {4-linear_count}/4 original.")
     print("q = 3329 for ML-KEM; q = 8380417 for ML-DSA. Ratios are rounded to six decimal places.")
     print("| Function | Input assumption (and /q) | Spec output (and /q) | Proof-derived interval | max abs /q |")
     print("|---|---|---|---|---|")
@@ -259,11 +302,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("table")
-    sub.add_parser("generate")
+    sub.add_parser("generate").add_argument("--linear", action="store_true")
     for command in ("replay", "collect", "reduction"):
         p = sub.add_parser(command)
         if command != "reduction":
             p.add_argument("names", nargs="*" if command == "replay" else "+")
+        if command == "replay":
+            p.add_argument("--linear", action="store_true")
         p.add_argument("--hearth", default=os.environ.get("HEARTH", "hearth"))
         p.add_argument("--run-root", type=Path, required=True)
         p.add_argument("--timeout", type=int, default=7200)
@@ -277,7 +322,7 @@ def main():
         if args.command == "table":
             table()
         elif args.command == "generate":
-            generate(sorted(SPECS))
+            generate(sorted(SPECS), args.linear)
         elif args.command == "collect":
             collect_results(args)
         elif args.command == "reduction":

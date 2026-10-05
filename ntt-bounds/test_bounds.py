@@ -1,6 +1,8 @@
 import unittest
 import json
 import hashlib
+import contextlib
+import io
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -25,6 +27,30 @@ class ExtractionChecks(unittest.TestCase):
             restored = generated.replace('\nneeds "ntt-bounds/tap.ml";;', '')
             restored = restored[:restored.rindex('\nntt_bounds_finish')]
             self.assertEqual(original, restored)
+
+    def test_linear_variant_preserves_every_other_proof_step(self):
+        for name in bounds.SPECS:
+            original = bounds.instrument(name)
+            linear = bounds.instrument(name, True)
+            if name in bounds.NTT_NAMES:
+                self.assertEqual(linear.count(bounds.LINEAR_FINISH), 1)
+                restored = linear.replace(bounds.LINEAR_IMPORT, "")
+                restored = restored.replace(bounds.LINEAR_FINISH, bounds.ORIGINAL_FINISH)
+                self.assertEqual(restored, original)
+                self.assertNotEqual(bounds.fingerprint(name), bounds.fingerprint(name, True))
+            else:
+                self.assertEqual(linear, original)
+
+    def test_linear_mode_reuses_accepted_original_without_regenerating(self):
+        name = "mlkem_ntt"
+        args = SimpleNamespace(names=[name], linear=True)
+        saved = {name: dict(fingerprint=bounds.fingerprint(name))}
+        with patch.object(bounds, "results", return_value=saved), \
+             patch.object(bounds, "generate") as generate, \
+             patch.object(bounds, "run") as run, contextlib.redirect_stdout(io.StringIO()):
+            bounds.replay(args)
+        generate.assert_called_once_with([], True)
+        run.assert_not_called()
 
     def test_table_refuses_missing_results(self):
         with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):
@@ -73,6 +99,30 @@ class ExtractionChecks(unittest.TestCase):
                     text.replace("26624", "26632"), text.replace("-27000 27000", "2 1")):
             with self.subTest(text=bad), self.assertRaises(ValueError):
                 bounds.reduction_values(bad)
+
+    def test_linear_collection_checks_helper_for_direct_and_basis_proofs(self):
+        observer = dict(package_path="ntt-bounds/tap.ml", sha256=hashlib.sha256(
+            (bounds.HERE / "tap.ml").read_bytes()).hexdigest())
+        helper = dict(package_path="ntt-bounds/upstream_int_linear.ml", sha256=hashlib.sha256(
+            (bounds.HERE / "upstream_int_linear.ml").read_bytes()).hexdigest())
+        with TemporaryDirectory() as directory:
+            receipt = Path(directory) / "transcript.log.json"
+            for name in ("mlkem_ntt", "mlkem_intt"):
+                receipt.with_name("transcript.log.raw").write_text(
+                    f"NTT_BOUND_RESULT {name} 256 -123 123\n")
+                graph = ([dict(package_path="ntt-bounds/generated/mlkem_intt.ml",
+                               sha256=hashlib.sha256(bounds.instrument(name, True).encode()).hexdigest())]
+                         if name == "mlkem_intt" else [])
+                info = dict(verdict="passed", new_axioms=0, receipt=str(receipt),
+                            source_sha256=hashlib.sha256(bounds.entry_source(name, True).encode()).hexdigest())
+                with patch.object(bounds, "run", return_value=SimpleNamespace(stdout=json.dumps(info))):
+                    receipt.write_text(json.dumps(dict(dependency_package_files=[observer, helper, *graph])))
+                    result = bounds.collect("hearth", Path(directory), name)
+                    self.assertEqual(result["fingerprint"], bounds.fingerprint(name, True))
+                    for helpers in ([], [helper, helper], [dict(helper, sha256="old-helper")]):
+                        receipt.write_text(json.dumps(dict(dependency_package_files=[observer, *helpers, *graph])))
+                        with self.subTest(name=name, helpers=helpers), self.assertRaisesRegex(ValueError, "linear congruence tactic"):
+                            bounds.collect("hearth", Path(directory), name)
 
 
 if __name__ == "__main__":

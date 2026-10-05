@@ -36,7 +36,9 @@ for runs and proof caches. No GitHub CI is needed.
 `tap.ml` shadows the public rule entrypoints after loading the real machinery.
 It records the exact lower/upper constants of the theorem that each proof feeds
 to its CONGBOUND split, then returns that same theorem. The original statements,
-tactics, recursive rule implementation, and local-bound propagation are intact.
+recursive rule implementation, and local-bound propagation are intact. Default
+mode also preserves every original tactic; the optional linear mode below
+changes only the four NTT congruence finishing branches.
 The original complete proof must pass with zero new axioms before a row is saved.
 The expected number of output calls is checked; a malformed theorem or changed
 source is an error. Unit checks cover source preservation and malformed/incomplete
@@ -55,7 +57,7 @@ The four ARM NTT files change only the final congruence tactic (to
 [The tactic change](https://github.com/awslabs/s2n-bignum/commit/f6c3644561e1cb1a594fef5d0dec35e4d7551081)
 avoids converting each expanded coefficient expression through real arithmetic;
 the range branches and theorem statements remain unchanged. This extraction
-currently uses the original pinned proof, including its congruence tactic.
+uses the original pinned congruence tactic by default.
 The shared machinery factors recursion into `ASM_CONGBOUND_STEP` and adds a
 memoized variant, and factors the SIMD simplification helper without changing its
 ARM body; the numeric reduction lemmas are unchanged. Later ARM polynomial
@@ -66,11 +68,19 @@ table is measured at the pin, without an upstream replay. x86 is explicitly not
 run until a suitable profile is available.
 
 `upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
-`f6c3644561e1cb1a594fef5d0dec35e4d7551081`. It is prepared as a fallback for the
-expensive congruence finishing phase, and is not used by the current extraction.
+`f6c3644561e1cb1a594fef5d0dec35e4d7551081`. Enable this alternative finishing
+tactic with `make -C ntt-bounds replay LINEAR=1 HEARTH=/path/to/hearth
+RUN_ROOT=/path/to/runs`. `generate LINEAR=1` prepares the same variant for direct
+Hearth commands. This applies upstream's exact congruence-finisher replacement
+to the four NTT proofs, keeping the pinned statements and range branches.
+The collector verifies the helper hash for this mode, including the inverse-NTT
+basis dependency. Accepted rows from either mode are reused without regenerating
+their proofs; the table reports how many NTT rows use each tactic. The original
+and linear variants have distinct fingerprints.
 `make -C ntt-bounds check-linear HEARTH=/path/to/hearth RUN_ROOT=/path/to/runs`
 checks its compatibility on two simple congruences, for q=3329 and q=8380417,
-using the light profile. These auxiliary checks do not establish NTT correctness
+using the light profile (2/2 bindings, zero new axioms in the local check).
+These auxiliary checks do not establish NTT correctness
 or any output bound; a complete function replay remains required.
 
 The inverse-NTT contracts differ: ARM requires `abs(z) <= 26624` (`8q-8`),
