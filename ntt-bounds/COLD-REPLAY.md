@@ -45,7 +45,7 @@ pin and upstream. Both measured intervals are listed below.
 | mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.receipt.md) |
 | mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.receipt.md) |
 | mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.receipt.md) |
-| mldsa_intt | [-6390410,6390410] | — | NOT STARTED | [mldsa_intt](—) |
+| mldsa_intt | [-6390410,6390410] | [-6390410,6390410] | PASS (same number) | [mldsa_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.receipt.md) |
 | late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
 
 The reduction calculation tests the existing interval argument with fresh graph
