@@ -112,7 +112,7 @@ index 00000000..0a283fd7
 +the same intervals; this is source comparison, not an upstream replay.
 diff --git a/ntt-bounds/Makefile b/ntt-bounds/Makefile
 new file mode 100644
-index 00000000..d32ca702
+index 00000000..276e2cf4
 --- /dev/null
 +++ b/ntt-bounds/Makefile
 @@ -0,0 +1,23 @@
@@ -137,14 +137,14 @@ index 00000000..d32ca702
 +reduction:
 +	@$(PYTHON) bounds.py reduction --hearth $(HEARTH) --run-root $(RUN_ROOT)
 +analyze-reduction:
-+	@$(HEARTH) prove intt_reduction.ml --basis generated/mlkem_intt.ml --basis-cache-root $(RUN_ROOT) --profile s2n-arm-mlkem --timeout 7200 --run-root $(RUN_ROOT)/intt-reduction
++	@$(HEARTH) prove intt_reduction.ml --basis generated/mlkem_intt.ml --profile s2n-arm-mlkem --timeout 7200 --run-root $(RUN_ROOT)/intt-reduction
 +	@$(MAKE) reduction
 diff --git a/ntt-bounds/README.md b/ntt-bounds/README.md
 new file mode 100644
-index 00000000..d114a698
+index 00000000..570e7c37
 --- /dev/null
 +++ b/ntt-bounds/README.md
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,197 @@
 +# ML-KEM / ML-DSA bound extraction
 +
 +For the separate cold check on fresh upstream main, clone upstream and HOL Light
@@ -240,9 +240,10 @@ index 00000000..d114a698
 +
 +`TIMEOUT` bounds each phase independently. The collector requires both correctness
 +bindings and the safety binding to pass with zero new axioms, checks the exact
-+basis bytes, and keeps the original full-proof fingerprint. The replay retires
-+the split basis after acceptance. Other functions retain their existing layout;
-+accepted rows are reused. `generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
++basis bytes, and keeps the original full-proof fingerprint. Hearth's shared
++runtime manages basis caching and idle retirement. Other functions retain their
++existing layout; accepted rows are reused.
++`generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
 +also prepares the two files for a direct Hearth invocation. The complete l7
 +replay passed: two correctness bindings in 10019.5 seconds, then the safety
 +binding in 440.0 seconds, each with zero new axioms, matched source conclusions
@@ -334,19 +335,19 @@ index 00000000..d114a698
 +
 +For durable lane execution, the inverse-NTT basis can be prepared directly with
 +`lane-run --wait UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
-+--basis ntt-bounds/generated/mlkem_intt.ml --basis-cache-root /path/to/runs
++--basis ntt-bounds/generated/mlkem_intt.ml
 +--profile s2n-arm-mlkem --timeout 7200 --run-root /path/to/runs/mlkem_intt`.
 +After it passes, `bounds.py collect mlkem_intt --hearth /path/to/hearth
-+--run-root /path/to/runs` imports its accepted result. Use the same basis/cache
-+for `intt_reduction.ml`, then retire this lane's basis with `hearth basis retire
-+--all --cache-root /path/to/runs`. Do not replay an unchanged completed proof
++--run-root /path/to/runs` imports its accepted result. Use the same basis
++for `intt_reduction.ml`; the shared runtime handles cache reuse and idle retirement.
++Do not replay an unchanged completed proof
 +just to regenerate a status report.
 diff --git a/ntt-bounds/bounds.py b/ntt-bounds/bounds.py
 new file mode 100644
-index 00000000..08418d42
+index 00000000..51fde960
 --- /dev/null
 +++ b/ntt-bounds/bounds.py
-@@ -0,0 +1,394 @@
+@@ -0,0 +1,391 @@
 +#!/usr/bin/env python3
 +"""Replay and tabulate the actual CONGBOUND theorems of the ARM proof suite."""
 +import argparse
@@ -646,19 +647,16 @@ index 00000000..08418d42
 +            continue
 +        family = name.split("_")[0]
 +        run(["make", "-C", "arm", f"{family}/{name}.o"], cwd=ROOT)
-+        basis = (["--basis", str(HERE / "generated/mlkem_intt.ml"),
-+                  "--basis-cache-root", str(args.run_root)] if name == "mlkem_intt" else [])
++        basis = (["--basis", str(HERE / "generated/mlkem_intt.ml")]
++                 if name == "mlkem_intt" else [])
 +        if split_safety and name in SPLIT_NAMES:
-+            basis = ["--basis", str(HERE / "generated" / (name + "_basis.ml")),
-+                     "--basis-cache-root", str(args.run_root)]
++            basis = ["--basis", str(HERE / "generated" / (name + "_basis.ml"))]
 +        run([args.hearth, "prove", str(entry_path(name, split_safety)), *basis,
 +             "--profile", "s2n-arm-mlkem", "--timeout", str(args.timeout),
 +             "--run-root", str(args.run_root / name)], cwd=ROOT)
 +        saved[name] = collect(args.hearth, args.run_root, name)
 +        save_results(saved)
 +        print(f"PASS: {name} bounds {saved[name]['lower']}..{saved[name]['upper']}", flush=True)
-+        if split_safety and name in SPLIT_NAMES:
-+            run([args.hearth, "basis", "retire", "--all", "--cache-root", str(args.run_root)])
 +
 +
 +def multiples(text, q):
@@ -1627,10 +1625,10 @@ index 00000000..39b885a4
 +                 " " ^ string_of_num lower ^ " " ^ string_of_num upper);;
 diff --git a/ntt-bounds/test_bounds.py b/ntt-bounds/test_bounds.py
 new file mode 100644
-index 00000000..4673489c
+index 00000000..c2bb7855
 --- /dev/null
 +++ b/ntt-bounds/test_bounds.py
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,219 @@
 +import unittest
 +import json
 +import hashlib
@@ -1694,6 +1692,30 @@ index 00000000..4673489c
 +             patch.object(bounds, "generate") as generate, contextlib.redirect_stderr(io.StringIO()):
 +            self.assertEqual(bounds.main(), 1)
 +        generate.assert_not_called()
++
++    def test_replay_uses_shared_basis_cache_without_retiring_shared_bases(self):
++        for name in ("mlkem_intt", "mldsa_pointwise_acc_l7"):
++            with self.subTest(name=name):
++                args = SimpleNamespace(names=[name], linear=False, split_safety=True,
++                                       hearth="hearth", run_root=Path("runs"), timeout=14400)
++                with patch.object(bounds, "results", return_value={}), \
++                     patch.object(bounds, "generate"), \
++                     patch.object(bounds, "run") as run, \
++                     patch.object(bounds, "collect", return_value=dict(lower="-1", upper="1")), \
++                     patch.object(bounds, "save_results"), \
++                     contextlib.redirect_stdout(io.StringIO()):
++                    bounds.replay(args)
++                commands = [call.args[0] for call in run.call_args_list]
++                self.assertEqual(len(commands), 2)
++                self.assertEqual(commands[0][:3], ["make", "-C", "arm"])
++                proof = commands[1]
++                self.assertEqual(proof[:2], ["hearth", "prove"])
++                basis_file = (name + "_basis.ml" if name in bounds.SPLIT_NAMES
++                              else name + ".ml")
++                self.assertEqual(proof[proof.index("--basis") + 1],
++                                 str(bounds.HERE / "generated" / basis_file))
++                self.assertNotIn("--basis-cache-root", proof)
++                self.assertNotIn("--cache-root", proof)
 +
 +    def test_table_refuses_missing_results(self):
 +        with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):

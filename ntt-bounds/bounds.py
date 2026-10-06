@@ -297,19 +297,16 @@ def replay(args):
             continue
         family = name.split("_")[0]
         run(["make", "-C", "arm", f"{family}/{name}.o"], cwd=ROOT)
-        basis = (["--basis", str(HERE / "generated/mlkem_intt.ml"),
-                  "--basis-cache-root", str(args.run_root)] if name == "mlkem_intt" else [])
+        basis = (["--basis", str(HERE / "generated/mlkem_intt.ml")]
+                 if name == "mlkem_intt" else [])
         if split_safety and name in SPLIT_NAMES:
-            basis = ["--basis", str(HERE / "generated" / (name + "_basis.ml")),
-                     "--basis-cache-root", str(args.run_root)]
+            basis = ["--basis", str(HERE / "generated" / (name + "_basis.ml"))]
         run([args.hearth, "prove", str(entry_path(name, split_safety)), *basis,
              "--profile", "s2n-arm-mlkem", "--timeout", str(args.timeout),
              "--run-root", str(args.run_root / name)], cwd=ROOT)
         saved[name] = collect(args.hearth, args.run_root, name)
         save_results(saved)
         print(f"PASS: {name} bounds {saved[name]['lower']}..{saved[name]['upper']}", flush=True)
-        if split_safety and name in SPLIT_NAMES:
-            run([args.hearth, "basis", "retire", "--all", "--cache-root", str(args.run_root)])
 
 
 def multiples(text, q):

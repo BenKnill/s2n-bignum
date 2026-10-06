@@ -93,9 +93,10 @@ make -C ntt-bounds replay SPLIT_SAFETY=1 TIMEOUT=14400 FUNCTIONS=mldsa_pointwise
 
 `TIMEOUT` bounds each phase independently. The collector requires both correctness
 bindings and the safety binding to pass with zero new axioms, checks the exact
-basis bytes, and keeps the original full-proof fingerprint. The replay retires
-the split basis after acceptance. Other functions retain their existing layout;
-accepted rows are reused. `generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
+basis bytes, and keeps the original full-proof fingerprint. Hearth's shared
+runtime manages basis caching and idle retirement. Other functions retain their
+existing layout; accepted rows are reused.
+`generate SPLIT_SAFETY=1 FUNCTIONS=mldsa_pointwise_acc_l7`
 also prepares the two files for a direct Hearth invocation. The complete l7
 replay passed: two correctness bindings in 10019.5 seconds, then the safety
 binding in 440.0 seconds, each with zero new axioms, matched source conclusions
@@ -187,10 +188,10 @@ this refutation gate and requires the assembly proof and M5 timing route instead
 
 For durable lane execution, the inverse-NTT basis can be prepared directly with
 `lane-run --wait UNIT /path/to/hearth prove ntt-bounds/generated/mlkem_intt_result.ml
---basis ntt-bounds/generated/mlkem_intt.ml --basis-cache-root /path/to/runs
+--basis ntt-bounds/generated/mlkem_intt.ml
 --profile s2n-arm-mlkem --timeout 7200 --run-root /path/to/runs/mlkem_intt`.
 After it passes, `bounds.py collect mlkem_intt --hearth /path/to/hearth
---run-root /path/to/runs` imports its accepted result. Use the same basis/cache
-for `intt_reduction.ml`, then retire this lane's basis with `hearth basis retire
---all --cache-root /path/to/runs`. Do not replay an unchanged completed proof
+--run-root /path/to/runs` imports its accepted result. Use the same basis
+for `intt_reduction.ml`; the shared runtime handles cache reuse and idle retirement.
+Do not replay an unchanged completed proof
 just to regenerate a status report.

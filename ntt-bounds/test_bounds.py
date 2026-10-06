@@ -62,6 +62,30 @@ class ExtractionChecks(unittest.TestCase):
             self.assertEqual(bounds.main(), 1)
         generate.assert_not_called()
 
+    def test_replay_uses_shared_basis_cache_without_retiring_shared_bases(self):
+        for name in ("mlkem_intt", "mldsa_pointwise_acc_l7"):
+            with self.subTest(name=name):
+                args = SimpleNamespace(names=[name], linear=False, split_safety=True,
+                                       hearth="hearth", run_root=Path("runs"), timeout=14400)
+                with patch.object(bounds, "results", return_value={}), \
+                     patch.object(bounds, "generate"), \
+                     patch.object(bounds, "run") as run, \
+                     patch.object(bounds, "collect", return_value=dict(lower="-1", upper="1")), \
+                     patch.object(bounds, "save_results"), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    bounds.replay(args)
+                commands = [call.args[0] for call in run.call_args_list]
+                self.assertEqual(len(commands), 2)
+                self.assertEqual(commands[0][:3], ["make", "-C", "arm"])
+                proof = commands[1]
+                self.assertEqual(proof[:2], ["hearth", "prove"])
+                basis_file = (name + "_basis.ml" if name in bounds.SPLIT_NAMES
+                              else name + ".ml")
+                self.assertEqual(proof[proof.index("--basis") + 1],
+                                 str(bounds.HERE / "generated" / basis_file))
+                self.assertNotIn("--basis-cache-root", proof)
+                self.assertNotIn("--cache-root", proof)
+
     def test_table_refuses_missing_results(self):
         with patch.object(bounds, "check_sources"), patch.object(bounds, "results", return_value={}):
             with self.assertRaisesRegex(ValueError, "incomplete"):
