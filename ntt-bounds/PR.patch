@@ -9,7 +9,7 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COLD-REPLAY.md b/ntt-bounds/COLD-REPLAY.md
 new file mode 100644
-index 00000000..a7f752a1
+index 00000000..f879c393
 --- /dev/null
 +++ b/ntt-bounds/COLD-REPLAY.md
 @@ -0,0 +1,54 @@
@@ -59,7 +59,7 @@ index 00000000..a7f752a1
 +| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.receipt.md) |
 +| mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.receipt.md) |
 +| mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.receipt.md) |
-+| mldsa_pointwise_acc_l7 | [-5220386,5220386] | — | NOT STARTED | [mldsa_pointwise_acc_l7](—) |
++| mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.receipt.md) |
 +| mldsa_intt | [-6390410,6390410] | — | NOT STARTED | [mldsa_intt](—) |
 +| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
 +
