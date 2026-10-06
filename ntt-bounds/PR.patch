@@ -9,13 +9,14 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COLD-REPLAY.md b/ntt-bounds/COLD-REPLAY.md
 new file mode 100644
-index 00000000..da3f2bde
+index 00000000..f2b182e8
 --- /dev/null
 +++ b/ntt-bounds/COLD-REPLAY.md
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,54 @@
 +# Cold replay of the #328 claims
 +
 +Upstream s2n-bignum: `4d1356a7470663c752660a59375dc3a9ef548428` (fresh main checkout).
++Warm reference: `fce78c7c17baee6a60511efe821930d4d049a6c0`.
 +HOL Light: `b19af6934759eed622d7aca25092367f81656eee` (the upstream workflow's HOLLIGHT_COMMIT).
 +System toolchain: OCaml 5.4.0, Camlp5 8.04.00; HOL built from source with
 +`HOLLIGHT_USE_MODULE=1 make`. No Hearth, CRIU images or warm shelves are used.
@@ -41,6 +42,8 @@ index 00000000..da3f2bde
 +Intervals are inclusive. The reducer's cold CONGBOUND interval is centered;
 +its complete exact-remainder theorem implies the canonical [0,3328] result
 +in COMMENT.md. Warm values are those already published in the draft.
++See the [source comparison](README.md) for the inspected changes between the warm
++pin and upstream. Both measured intervals are listed below.
 +
 +| Claim | Warm interval | Cold interval | Verdict | Receipt |
 +|---|---|---|---|---|
@@ -138,10 +141,10 @@ index 00000000..d32ca702
 +	@$(MAKE) reduction
 diff --git a/ntt-bounds/README.md b/ntt-bounds/README.md
 new file mode 100644
-index 00000000..09bb44b5
+index 00000000..d114a698
 --- /dev/null
 +++ b/ntt-bounds/README.md
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,196 @@
 +# ML-KEM / ML-DSA bound extraction
 +
 +For the separate cold check on fresh upstream main, clone upstream and HOL Light
@@ -266,9 +269,10 @@ index 00000000..09bb44b5
 +ARM body; the numeric reduction lemmas are unchanged. Later ARM polynomial
 +proofs do not call CONGBOUND. These changes preserve the bound expressions and
 +numeric rules used by the 14 target proofs, so the same intervals are expected
-+at that upstream revision. This is an inference from source comparison: the
-+table is measured at the pin, without an upstream replay. x86 is explicitly not
-+run until a suitable profile is available.
++at that upstream revision. This expectation is an inference from source comparison;
++the warm table is measured at the pin. [COLD-REPLAY.md](COLD-REPLAY.md) separately
++reports the fresh upstream replay, both intervals and the exact completed coverage.
++x86 is explicitly not run until a suitable profile is available.
 +
 +`upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
 +`f6c3644561e1cb1a594fef5d0dec35e4d7551081`. Enable this alternative finishing
@@ -758,10 +762,10 @@ index 00000000..4106a5cf
 +  REPEAT GEN_TAC THEN INT_LINEAR_CONG_TAC);;
 diff --git a/ntt-bounds/cold_replay.py b/ntt-bounds/cold_replay.py
 new file mode 100644
-index 00000000..0af4754a
+index 00000000..d2ac15b0
 --- /dev/null
 +++ b/ntt-bounds/cold_replay.py
-@@ -0,0 +1,346 @@
+@@ -0,0 +1,349 @@
 +#!/usr/bin/env python3
 +"""Cold upstream replay using s2n-bignum's existing native proof builder."""
 +import argparse
@@ -968,6 +972,7 @@ index 00000000..0af4754a
 +    header = f"""# Cold replay of the #328 claims
 +
 +Upstream s2n-bignum: `{s2n}` (fresh main checkout).
++Warm reference: `{bounds.PIN}`.
 +HOL Light: `{hol}` (the upstream workflow's HOLLIGHT_COMMIT).
 +System toolchain: OCaml 5.4.0, Camlp5 8.04.00; HOL built from source with
 +`HOLLIGHT_USE_MODULE=1 make`. No Hearth, CRIU images or warm shelves are used.
@@ -993,6 +998,8 @@ index 00000000..0af4754a
 +Intervals are inclusive. The reducer's cold CONGBOUND interval is centered;
 +its complete exact-remainder theorem implies the canonical [0,3328] result
 +in COMMENT.md. Warm values are those already published in the draft.
++See the [source comparison](README.md) for the inspected changes between the warm
++pin and upstream. Both measured intervals are listed below.
 +
 +| Claim | Warm interval | Cold interval | Verdict | Receipt |
 +|---|---|---|---|---|

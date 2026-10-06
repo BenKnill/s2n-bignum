@@ -122,9 +122,10 @@ memoized variant, and factors the SIMD simplification helper without changing it
 ARM body; the numeric reduction lemmas are unchanged. Later ARM polynomial
 proofs do not call CONGBOUND. These changes preserve the bound expressions and
 numeric rules used by the 14 target proofs, so the same intervals are expected
-at that upstream revision. This is an inference from source comparison: the
-table is measured at the pin, without an upstream replay. x86 is explicitly not
-run until a suitable profile is available.
+at that upstream revision. This expectation is an inference from source comparison;
+the warm table is measured at the pin. [COLD-REPLAY.md](COLD-REPLAY.md) separately
+reports the fresh upstream replay, both intervals and the exact completed coverage.
+x86 is explicitly not run until a suitable profile is available.
 
 `upstream_int_linear.ml` is an unmodified copy of `common/int_linear.ml` at
 `f6c3644561e1cb1a594fef5d0dec35e4d7551081`. Enable this alternative finishing

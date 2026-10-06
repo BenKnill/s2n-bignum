@@ -204,6 +204,7 @@ def report(path, rows, s2n, hol, timeout, root, holdir, receipt_root):
     header = f"""# Cold replay of the #328 claims
 
 Upstream s2n-bignum: `{s2n}` (fresh main checkout).
+Warm reference: `{bounds.PIN}`.
 HOL Light: `{hol}` (the upstream workflow's HOLLIGHT_COMMIT).
 System toolchain: OCaml 5.4.0, Camlp5 8.04.00; HOL built from source with
 `HOLLIGHT_USE_MODULE=1 make`. No Hearth, CRIU images or warm shelves are used.
@@ -229,6 +230,8 @@ Batch command:
 Intervals are inclusive. The reducer's cold CONGBOUND interval is centered;
 its complete exact-remainder theorem implies the canonical [0,3328] result
 in COMMENT.md. Warm values are those already published in the draft.
+See the [source comparison](README.md) for the inspected changes between the warm
+pin and upstream. Both measured intervals are listed below.
 
 | Claim | Warm interval | Cold interval | Verdict | Receipt |
 |---|---|---|---|---|
