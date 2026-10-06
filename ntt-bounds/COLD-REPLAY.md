@@ -41,7 +41,7 @@ pin and upstream. Both measured intervals are listed below.
 | mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.receipt.md) |
 | mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
 | mlkem_ntt | [-23594,23594] | [-23594,23594] | PASS (same number) | [mlkem_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.receipt.md) |
-| mldsa_pointwise_acc_l4 | [-4778882,4778882] | — | NOT STARTED | [mldsa_pointwise_acc_l4](—) |
+| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.receipt.md) |
 | mldsa_pointwise_acc_l5 | [-4926050,4926050] | — | NOT STARTED | [mldsa_pointwise_acc_l5](—) |
 | mldsa_ntt | [-42163872,42163872] | — | NOT STARTED | [mldsa_ntt](—) |
 | mldsa_pointwise_acc_l7 | [-5220386,5220386] | — | NOT STARTED | [mldsa_pointwise_acc_l7](—) |
