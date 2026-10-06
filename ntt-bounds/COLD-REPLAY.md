@@ -36,14 +36,14 @@ in COMMENT.md. Warm values are those already published in the draft.
 | mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.receipt.md) |
 | mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.receipt.md) |
 | mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.receipt.md) |
-| mlkem_intt | [-26624,26624] | — | NOT STARTED | [mlkem_intt](—) |
+| mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
 | mlkem_ntt | [-23594,23594] | — | NOT STARTED | [mlkem_ntt](—) |
 | mldsa_pointwise_acc_l4 | [-4778882,4778882] | — | NOT STARTED | [mldsa_pointwise_acc_l4](—) |
 | mldsa_pointwise_acc_l5 | [-4926050,4926050] | — | NOT STARTED | [mldsa_pointwise_acc_l5](—) |
 | mldsa_ntt | [-42163872,42163872] | — | NOT STARTED | [mldsa_ntt](—) |
 | mldsa_pointwise_acc_l7 | [-5220386,5220386] | — | NOT STARTED | [mldsa_pointwise_acc_l7](—) |
 | mldsa_intt | [-6390410,6390410] | — | NOT STARTED | [mldsa_intt](—) |
-| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | — | NOT STARTED | [late-v21 reduction](—) |
+| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
 
 The reduction calculation tests the existing interval argument with fresh graph
 equations as implication premises; it does not establish an attainable counterexample
