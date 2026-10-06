@@ -32,21 +32,21 @@ pin and upstream. Both measured intervals are listed below.
 
 | Claim | Warm interval | Cold interval | Verdict | Receipt |
 |---|---|---|---|---|
-| mlkem_tomont | [-2653,2653] | [-2653,2653] | PASS (same number) | [mlkem_tomont](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_tomont.receipt.md) |
-| mlkem_reduce | [-1664,1664] | [-1664,1664] | PASS (same number) | [mlkem_reduce](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.receipt.md) |
-| mlkem_mulcache_compute | [-3292,3292] | [-3292,3292] | PASS (same number) | [mlkem_mulcache_compute](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.receipt.md) |
-| mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.receipt.md) |
-| mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.receipt.md) |
-| mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.receipt.md) |
-| mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.receipt.md) |
-| mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
-| mlkem_ntt | [-23594,23594] | [-23594,23594] | PASS (same number) | [mlkem_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.receipt.md) |
-| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.receipt.md) |
-| mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.receipt.md) |
-| mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.receipt.md) |
-| mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.receipt.md) |
-| mldsa_intt | [-6390410,6390410] | [-6390410,6390410] | PASS (same number) | [mldsa_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.receipt.md) |
-| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
+| mlkem_tomont | [-2653,2653] | [-2653,2653] | PASS (same number) | [mlkem_tomont](cold-receipts/mlkem_tomont.receipt.md) |
+| mlkem_reduce | [-1664,1664] | [-1664,1664] | PASS (same number) | [mlkem_reduce](cold-receipts/mlkem_reduce.receipt.md) |
+| mlkem_mulcache_compute | [-3292,3292] | [-3292,3292] | PASS (same number) | [mlkem_mulcache_compute](cold-receipts/mlkem_mulcache_compute.receipt.md) |
+| mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](cold-receipts/mldsa_pointwise.receipt.md) |
+| mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](cold-receipts/mlkem_basemul_k2.receipt.md) |
+| mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](cold-receipts/mlkem_basemul_k3.receipt.md) |
+| mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](cold-receipts/mlkem_basemul_k4.receipt.md) |
+| mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](cold-receipts/mlkem_intt.receipt.md) |
+| mlkem_ntt | [-23594,23594] | [-23594,23594] | PASS (same number) | [mlkem_ntt](cold-receipts/mlkem_ntt.receipt.md) |
+| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](cold-receipts/mldsa_pointwise_acc_l4.receipt.md) |
+| mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](cold-receipts/mldsa_pointwise_acc_l5.receipt.md) |
+| mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](cold-receipts/mldsa_ntt.receipt.md) |
+| mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](cold-receipts/mldsa_pointwise_acc_l7.receipt.md) |
+| mldsa_intt | [-6390410,6390410] | [-6390410,6390410] | PASS (same number) | [mldsa_intt](cold-receipts/mldsa_intt.receipt.md) |
+| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](cold-receipts/late-v21.receipt.md) |
 
 The reduction calculation tests the existing interval argument with fresh graph
 equations as implication premises; it does not establish an attainable counterexample

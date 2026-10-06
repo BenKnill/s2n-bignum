@@ -9,7 +9,7 @@ index 00000000..30869572
 +__pycache__/
 diff --git a/ntt-bounds/COLD-REPLAY.md b/ntt-bounds/COLD-REPLAY.md
 new file mode 100644
-index 00000000..3fba8939
+index 00000000..f598f8dc
 --- /dev/null
 +++ b/ntt-bounds/COLD-REPLAY.md
 @@ -0,0 +1,54 @@
@@ -47,21 +47,21 @@ index 00000000..3fba8939
 +
 +| Claim | Warm interval | Cold interval | Verdict | Receipt |
 +|---|---|---|---|---|
-+| mlkem_tomont | [-2653,2653] | [-2653,2653] | PASS (same number) | [mlkem_tomont](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_tomont.receipt.md) |
-+| mlkem_reduce | [-1664,1664] | [-1664,1664] | PASS (same number) | [mlkem_reduce](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.receipt.md) |
-+| mlkem_mulcache_compute | [-3292,3292] | [-3292,3292] | PASS (same number) | [mlkem_mulcache_compute](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.receipt.md) |
-+| mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.receipt.md) |
-+| mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.receipt.md) |
-+| mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.receipt.md) |
-+| mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.receipt.md) |
-+| mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
-+| mlkem_ntt | [-23594,23594] | [-23594,23594] | PASS (same number) | [mlkem_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.receipt.md) |
-+| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.receipt.md) |
-+| mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.receipt.md) |
-+| mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.receipt.md) |
-+| mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.receipt.md) |
-+| mldsa_intt | [-6390410,6390410] | [-6390410,6390410] | PASS (same number) | [mldsa_intt](/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.receipt.md) |
-+| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.receipt.md) |
++| mlkem_tomont | [-2653,2653] | [-2653,2653] | PASS (same number) | [mlkem_tomont](cold-receipts/mlkem_tomont.receipt.md) |
++| mlkem_reduce | [-1664,1664] | [-1664,1664] | PASS (same number) | [mlkem_reduce](cold-receipts/mlkem_reduce.receipt.md) |
++| mlkem_mulcache_compute | [-3292,3292] | [-3292,3292] | PASS (same number) | [mlkem_mulcache_compute](cold-receipts/mlkem_mulcache_compute.receipt.md) |
++| mldsa_pointwise | [-5514723,5514723] | [-5514723,5514723] | PASS (same number) | [mldsa_pointwise](cold-receipts/mldsa_pointwise.receipt.md) |
++| mlkem_basemul_k2 | [-9857,9857] | [-9857,9857] | PASS (same number) | [mlkem_basemul_k2](cold-receipts/mlkem_basemul_k2.receipt.md) |
++| mlkem_basemul_k3 | [-13953,13953] | [-13953,13953] | PASS (same number) | [mlkem_basemul_k3](cold-receipts/mlkem_basemul_k3.receipt.md) |
++| mlkem_basemul_k4 | [-18049,18049] | [-18049,18049] | PASS (same number) | [mlkem_basemul_k4](cold-receipts/mlkem_basemul_k4.receipt.md) |
++| mlkem_intt | [-26624,26624] | [-26624,26624] | PASS (same number) | [mlkem_intt](cold-receipts/mlkem_intt.receipt.md) |
++| mlkem_ntt | [-23594,23594] | [-23594,23594] | PASS (same number) | [mlkem_ntt](cold-receipts/mlkem_ntt.receipt.md) |
++| mldsa_pointwise_acc_l4 | [-4778882,4778882] | [-4778882,4778882] | PASS (same number) | [mldsa_pointwise_acc_l4](cold-receipts/mldsa_pointwise_acc_l4.receipt.md) |
++| mldsa_pointwise_acc_l5 | [-4926050,4926050] | [-4926050,4926050] | PASS (same number) | [mldsa_pointwise_acc_l5](cold-receipts/mldsa_pointwise_acc_l5.receipt.md) |
++| mldsa_ntt | [-42163872,42163872] | [-42163872,42163872] | PASS (same number) | [mldsa_ntt](cold-receipts/mldsa_ntt.receipt.md) |
++| mldsa_pointwise_acc_l7 | [-5220386,5220386] | [-5220386,5220386] | PASS (same number) | [mldsa_pointwise_acc_l7](cold-receipts/mldsa_pointwise_acc_l7.receipt.md) |
++| mldsa_intt | [-6390410,6390410] | [-6390410,6390410] | PASS (same number) | [mldsa_intt](cold-receipts/mldsa_intt.receipt.md) |
++| late-v21 reduction | [-32768,32767]; max 32768 > 26624 | [-32768,32767]; max 32768; spec 26624; 4 widened nodes | PASS | [late-v21 reduction](cold-receipts/late-v21.receipt.md) |
 +
 +The reduction calculation tests the existing interval argument with fresh graph
 +equations as implication premises; it does not establish an attainable counterexample
@@ -760,6 +760,324 @@ index 00000000..4106a5cf
 + (`!x y z:int.
 +     (x + &8380418 * y - &16760833 * z == x + y + z) (mod &8380417)`,
 +  REPEAT GEN_TAC THEN INT_LINEAR_CONG_TAC);;
+diff --git a/ntt-bounds/cold-receipts/late-v21.receipt.md b/ntt-bounds/cold-receipts/late-v21.receipt.md
+new file mode 100644
+index 00000000..132dc0f6
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/late-v21.receipt.md
+@@ -0,0 +1,23 @@
++PASS (same number): mlkem_intt; cold [-26624,26624]; elapsed 1723.0 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_intt.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_intt_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_intt.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
++
++
++
++
++
++
++
++
++Reduction: PASS; [-32768,32767]; max 32768; spec 26624; 4 widened nodes
+diff --git a/ntt-bounds/cold-receipts/mldsa_intt.receipt.md b/ntt-bounds/cold-receipts/mldsa_intt.receipt.md
+new file mode 100644
+index 00000000..d8ea649a
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_intt.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_intt; cold [-6390410,6390410]; elapsed 5888.2 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_intt.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_intt_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_intt.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_intt.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mldsa_ntt.receipt.md b/ntt-bounds/cold-receipts/mldsa_ntt.receipt.md
+new file mode 100644
+index 00000000..6a0c28fb
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_ntt.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_ntt; cold [-42163872,42163872]; elapsed 2312.3 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_ntt.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_ntt_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_ntt.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_ntt.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mldsa_pointwise.receipt.md b/ntt-bounds/cold-receipts/mldsa_pointwise.receipt.md
+new file mode 100644
+index 00000000..2f20e3f9
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_pointwise.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_pointwise; cold [-5514723,5514723]; elapsed 831.0 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_pointwise.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_pointwise_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_pointwise.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l4.receipt.md b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l4.receipt.md
+new file mode 100644
+index 00000000..33bf30f2
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l4.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_pointwise_acc_l4; cold [-4778882,4778882]; elapsed 2103.7 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_pointwise_acc_l4.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_pointwise_acc_l4_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_pointwise_acc_l4.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l4.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l5.receipt.md b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l5.receipt.md
+new file mode 100644
+index 00000000..7cf1d96c
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l5.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_pointwise_acc_l5; cold [-4926050,4926050]; elapsed 2345.7 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_pointwise_acc_l5.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_pointwise_acc_l5_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_pointwise_acc_l5.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l5.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l7.receipt.md b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l7.receipt.md
+new file mode 100644
+index 00000000..d1255d1c
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mldsa_pointwise_acc_l7.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mldsa_pointwise_acc_l7; cold [-5220386,5220386]; elapsed 5678.7 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mldsa/mldsa_pointwise_acc_l7.o
++../tools/build-proof.sh ../ntt-bounds/generated/mldsa_pointwise_acc_l7_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mldsa_pointwise_acc_l7.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mldsa_pointwise_acc_l7.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_basemul_k2.receipt.md b/ntt-bounds/cold-receipts/mlkem_basemul_k2.receipt.md
+new file mode 100644
+index 00000000..022216d5
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_basemul_k2.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_basemul_k2; cold [-9857,9857]; elapsed 713.3 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_basemul_k2.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_basemul_k2_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_basemul_k2.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k2.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_basemul_k3.receipt.md b/ntt-bounds/cold-receipts/mlkem_basemul_k3.receipt.md
+new file mode 100644
+index 00000000..6eb523f4
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_basemul_k3.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_basemul_k3; cold [-13953,13953]; elapsed 1094.6 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_basemul_k3.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_basemul_k3_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_basemul_k3.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k3.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_basemul_k4.receipt.md b/ntt-bounds/cold-receipts/mlkem_basemul_k4.receipt.md
+new file mode 100644
+index 00000000..83b04d8a
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_basemul_k4.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_basemul_k4; cold [-18049,18049]; elapsed 1879.0 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_basemul_k4.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_basemul_k4_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_basemul_k4.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_basemul_k4.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_intt.receipt.md b/ntt-bounds/cold-receipts/mlkem_intt.receipt.md
+new file mode 100644
+index 00000000..132dc0f6
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_intt.receipt.md
+@@ -0,0 +1,23 @@
++PASS (same number): mlkem_intt; cold [-26624,26624]; elapsed 1723.0 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_intt.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_intt_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_intt.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_intt.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
++
++
++
++
++
++
++
++
++Reduction: PASS; [-32768,32767]; max 32768; spec 26624; 4 widened nodes
+diff --git a/ntt-bounds/cold-receipts/mlkem_mulcache_compute.receipt.md b/ntt-bounds/cold-receipts/mlkem_mulcache_compute.receipt.md
+new file mode 100644
+index 00000000..e945c6da
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_mulcache_compute.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_mulcache_compute; cold [-3292,3292]; elapsed 378.7 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_mulcache_compute.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_mulcache_compute_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_mulcache_compute.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_mulcache_compute.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_ntt.receipt.md b/ntt-bounds/cold-receipts/mlkem_ntt.receipt.md
+new file mode 100644
+index 00000000..cb3db295
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_ntt.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_ntt; cold [-23594,23594]; elapsed 1019.3 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_ntt.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_ntt_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_ntt.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_ntt.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_reduce.receipt.md b/ntt-bounds/cold-receipts/mlkem_reduce.receipt.md
+new file mode 100644
+index 00000000..8baf2b95
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_reduce.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_reduce; cold [-1664,1664]; elapsed 357.6 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_reduce.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_reduce_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_reduce.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_reduce.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
+diff --git a/ntt-bounds/cold-receipts/mlkem_tomont.receipt.md b/ntt-bounds/cold-receipts/mlkem_tomont.receipt.md
+new file mode 100644
+index 00000000..0308208d
+--- /dev/null
++++ b/ntt-bounds/cold-receipts/mlkem_tomont.receipt.md
+@@ -0,0 +1,14 @@
++PASS (same number): mlkem_tomont; cold [-2653,2653]; elapsed 392.6 s; exit 0
++
++s2n-bignum 4d1356a7470663c752660a59375dc3a9ef548428
++HOL Light b19af6934759eed622d7aca25092367f81656eee
++
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum/arm
++make mlkem/mlkem_tomont.o
++../tools/build-proof.sh ../ntt-bounds/generated/mlkem_tomont_cold.ml /home/bluestar/lanes/ntt-bounds/cold/hol-light/hol.sh ../../receipts/mlkem_tomont.native
++cwd /home/bluestar/lanes/ntt-bounds/cold/s2n-bignum
++/home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_tomont.native
++
++Build log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_tomont.build.log
++Proof log: /home/bluestar/lanes/ntt-bounds/cold/receipts/mlkem_tomont.log
++PASS requires all three source statements, empty hypotheses, check_axioms(), and a unique complete bound marker.
 diff --git a/ntt-bounds/cold_replay.py b/ntt-bounds/cold_replay.py
 new file mode 100644
 index 00000000..d2ac15b0
