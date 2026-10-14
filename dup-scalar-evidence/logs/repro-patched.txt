@@ -1,0 +1,6 @@
+REPRO 0x5e180400  mov d0, v0.d[1]  (Rd = Rn)   decode = SOME (arm_DUP_ELEM_SCALAR Q0 Q0 1 64)
+REPRO 0x5e180400  step theorem proved: YES
+REPRO 0x5e1804a0  mov d0, v5.d[1]              decode = SOME (arm_DUP_ELEM_SCALAR Q0 Q5 1 64)
+REPRO 0x5e1804a0  step theorem proved: YES
+REPRO 0x5e180482  mov d2, v4.d[1]              decode = SOME (arm_DUP_ELEM_SCALAR Q2 Q4 1 64)
+REPRO 0x5e180482  step theorem proved: YES

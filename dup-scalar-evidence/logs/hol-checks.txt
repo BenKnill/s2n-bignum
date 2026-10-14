@@ -1,0 +1,36 @@
+PASS decode 0x5e1f0441 esize=8 idx=15 Rd=1 Rn=2
+PASS step lane-copy+upper-zero 0x5e1f0441 esize=8 idx=15 Rd=1 Rn=2
+PASS decode 0x5e0107ff esize=8 idx=0 Rd=31 Rn=31 (alias)
+PASS step lane-copy+upper-zero 0x5e0107ff esize=8 idx=0 Rd=31 Rn=31 (alias)
+PASS decode 0x5e0f040c esize=8 idx=7 Rd=12 Rn=0
+PASS step lane-copy+upper-zero 0x5e0f040c esize=8 idx=7 Rd=12 Rn=0
+PASS decode 0x5e160463 esize=16 idx=5 Rd=3 Rn=3 (alias)
+PASS step lane-copy+upper-zero 0x5e160463 esize=16 idx=5 Rd=3 Rn=3 (alias)
+PASS decode 0x5e1e0549 esize=16 idx=7 Rd=9 Rn=10
+PASS step lane-copy+upper-zero 0x5e1e0549 esize=16 idx=7 Rd=9 Rn=10
+PASS decode 0x5e0207e0 esize=16 idx=0 Rd=0 Rn=31
+PASS step lane-copy+upper-zero 0x5e0207e0 esize=16 idx=0 Rd=0 Rn=31
+PASS decode 0x5e1404a4 esize=32 idx=2 Rd=4 Rn=5
+PASS step lane-copy+upper-zero 0x5e1404a4 esize=32 idx=2 Rd=4 Rn=5
+PASS decode 0x5e1c04c6 esize=32 idx=3 Rd=6 Rn=6 (alias)
+PASS step lane-copy+upper-zero 0x5e1c04c6 esize=32 idx=3 Rd=6 Rn=6 (alias)
+PASS decode 0x5e040651 esize=32 idx=0 Rd=17 Rn=18
+PASS step lane-copy+upper-zero 0x5e040651 esize=32 idx=0 Rd=17 Rn=18
+PASS decode 0x5e0804e7 esize=64 idx=0 Rd=7 Rn=7 (alias)
+PASS step lane-copy+upper-zero 0x5e0804e7 esize=64 idx=0 Rd=7 Rn=7 (alias)
+PASS decode 0x5e180400 esize=64 idx=1 Rd=0 Rn=0 (alias)
+PASS step lane-copy+upper-zero 0x5e180400 esize=64 idx=1 Rd=0 Rn=0 (alias)
+PASS decode 0x5e1804a0 esize=64 idx=1 Rd=0 Rn=5
+PASS step lane-copy+upper-zero 0x5e1804a0 esize=64 idx=1 Rd=0 Rn=5
+PASS decode 0x5e180482 esize=64 idx=1 Rd=2 Rn=4
+PASS step lane-copy+upper-zero 0x5e180482 esize=64 idx=1 Rd=2 Rn=4
+PASS decode 0x5e18043e esize=64 idx=1 Rd=30 Rn=1
+PASS step lane-copy+upper-zero 0x5e18043e esize=64 idx=1 Rd=30 Rn=1
+PASS refuse 0x5e000400 imm5=00000 (reserved)
+PASS refuse 0x5e100400 imm5=10000 (reserved)
+PASS refuse 0x5e1007ff imm5=10000 (reserved), Rd=Rn=31
+PASS refuse 0x7e080400 op=1 (unallocated)
+PASS refuse 0x7e180400 op=1, imm5 as d[1] (unallocated)
+PASS refuse 0x5e080c00 imm4=0001 (unallocated)
+PASS refuse 0x5e187c00 imm4=1111 (unallocated)
+CHECKS pass=35 fail=0

@@ -1,0 +1,2 @@
+differential: 23152 words, 180 differ, 0 unexpected differences, 180 legal scalar DUP words, 180 of them changed as expected
+all-pattern: 32768 words, 30720 legal decode exactly per rule, 2048 reserved refused, 0 bad

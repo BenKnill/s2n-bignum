@@ -1,0 +1,2 @@
+GNU objdump 2.46 (binutils, Ubuntu): 34752 words, 30720 legal forms agree, 4032 refused by both, 0 mismatches
+LLVM objdump (Apple LLVM 21.0.0, Mac M5): 34752 words, 30720 legal forms agree, 4032 refused by both, 0 mismatches

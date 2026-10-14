@@ -1,0 +1,6 @@
+REPRO 0x5e180400  mov d0, v0.d[1]  (Rd = Rn)   decode = FAIL PURE_DECODE_CONV: decode (word 1578632192)
+REPRO 0x5e180400  step theorem proved: NO (ARM_MK_EXEC_RULE fails: word does not decode)
+REPRO 0x5e1804a0  mov d0, v5.d[1]              decode = FAIL PURE_DECODE_CONV: decode (word 1578632352)
+REPRO 0x5e1804a0  step theorem proved: NO (ARM_MK_EXEC_RULE fails: word does not decode)
+REPRO 0x5e180482  mov d2, v4.d[1]              decode = FAIL PURE_DECODE_CONV: decode (word 1578632322)
+REPRO 0x5e180482  step theorem proved: NO (ARM_MK_EXEC_RULE fails: word does not decode)

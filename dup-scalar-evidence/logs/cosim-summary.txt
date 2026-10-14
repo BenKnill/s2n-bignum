@@ -1,0 +1,27 @@
+== simdup-m5-seed20261014.log | OK lines: 400 | Finished (time limit: 2400.000000s, tested reg instances: 400, tested mem instances: 0, total: 400) | no error
+      87  DUP_ELEM_SCALAR Rd=Rn alias
+      39  DUP_ELEM_SCALAR esize=16
+      15  DUP_ELEM_SCALAR esize=32
+     139  DUP_ELEM_SCALAR esize=64
+      86  DUP_ELEM_SCALAR esize=8
+      94  DUP_ELEM_SCALAR exact Node word
+      38  refused by model and trapped on hardware
+       9  refused by model and trapped on hardware (scalar DUP pattern)
+== simdup-qemu2-seed1014.log | OK lines: 1500 | Finished (time limit: 2400.000000s, tested reg instances: 1500, tested mem instances: 0, total: 1500) | no error
+     364  DUP_ELEM_SCALAR Rd=Rn alias
+     163  DUP_ELEM_SCALAR esize=16
+      80  DUP_ELEM_SCALAR esize=32
+     538  DUP_ELEM_SCALAR esize=64
+     317  DUP_ELEM_SCALAR esize=8
+     363  DUP_ELEM_SCALAR exact Node word
+     144  refused by model and trapped on hardware
+      33  refused by model and trapped on hardware (scalar DUP pattern)
+== simfull-qemu-seed1.log | OK lines: 1000 | Finished (time limit: 2400.000000s, tested reg instances: 901, tested mem instances: 99, total: 1000) | no error
+       1  DUP_ELEM_SCALAR esize=64
+       1  DUP_ELEM_SCALAR esize=8
+     115  refused by model and trapped on hardware
+== simfull-qemu-seed2.log | OK lines: 1000 | Finished (time limit: 2400.000000s, tested reg instances: 900, tested mem instances: 100, total: 1000) | no error
+       1  DUP_ELEM_SCALAR Rd=Rn alias
+       3  DUP_ELEM_SCALAR esize=16
+       3  DUP_ELEM_SCALAR esize=8
+     141  refused by model and trapped on hardware
