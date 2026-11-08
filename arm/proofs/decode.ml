@@ -1447,6 +1447,25 @@ let decode_encode_BL = prove (`decode (word (encode_BL n)) =
   CONV_TAC (DEPTH_CONV UNWIND_CONV THENC ONCE_DEPTH_CONV DIMINDEX_CONV THENC
     NUM_REDUCE_CONV) THEN IMP_REWRITE_TAC [MOD_LT] THEN ARITH_TAC);;
 
+let encode_B = new_definition `encode_B n =
+  0x14000000 + val (iword (n div &4):26 word)`;;
+
+let decode_encode_B = prove (`decode (word (encode_B n)) =
+  SOME (arm_B (word (val (iword (n div &4):26 word) * 4)))`,
+  MATCH_MP_TAC (
+    let th = SPEC `word (encode_B n):int32` decode in
+    let tm = rhs (concl th) in
+    let A, tr = bm_build_tree (rhs (concl th)) in
+    let a = Array.init 32 (fun i -> Some ((0x14000000 land (1 lsl i)) != 0)) in
+    (DISCH_ALL o REWRITE_RULE [] o INST [`F`,`op:bool`] o TRANS th)
+      (hd (snd (snd (get_dt a (bm_add_pos tr tm)))))) THEN
+  REWRITE_TAC [encode_B] THEN
+  SPEC_TAC (`iword (n div &4):26 word`,`w:26 word`) THEN
+  REWRITE_TAC [FORALL_VAL_GEN; VAL_WORD; CONSPAT_pat_set; NILPAT_pat_set;
+    word1; bitval] THEN
+  CONV_TAC (DEPTH_CONV UNWIND_CONV THENC ONCE_DEPTH_CONV DIMINDEX_CONV THENC
+    NUM_REDUCE_CONV) THEN IMP_REWRITE_TAC [MOD_LT] THEN ARITH_TAC);;
+
 let encode_ADR = new_definition `encode_ADR (dstreg:(5)word) (immhi:(19)word) (immlo:(2)word) =
   0x10000000 + val (immlo) * 2 EXP 29 +
                val (immhi) * 2 EXP 5 +
@@ -1783,7 +1802,7 @@ let PURE_DECODE_CONV =
     add_conv (`decode_bitmask`, 3, DECODE_BITMASK_CONV) rw;
     (* adding decode_encode* lemmas after decode gives higher priority
        to these rules *)
-    add_thms [decode_encode_BL; decode_encode_ADR;
+    add_thms [decode_encode_BL; decode_encode_B; decode_encode_ADR;
               decode_encode_ADRP; decode_encode_ADD_rri64] rw;
 
     rw in
@@ -1865,6 +1884,9 @@ let make_fn_word_list, make_fn_word_list_reloc =
 
           | Some (Arm_call26,sym,addend) ->
           Printf.bprintf buf "  BL (mk_var(\"%s\",`:num`),%d,%d)%s\n" sym addend pc s
+
+          | Some (Arm_jump26,sym,addend) ->
+          Printf.bprintf buf "  B_JUMP26 (mk_var(\"%s\",`:num`),%d,%d)%s\n" sym addend pc s
 
           | Some (Arm_adr_prel_lo21,sym,addend) ->
           let dstreg = opcode land 31 in
@@ -2091,7 +2113,7 @@ let bignum_madd_mc = define_word_list "bignum_madd_mc"
     print_literal_relocs_from_elf, and checks whether the OCaml function
     matches the symbolic byte list term.
  ***)
-let term_of_relocs_arm, assert_relocs =
+let term_of_relocs_arm, assert_relocs, B_JUMP26 =
   (* The append_reloc_* functions implement 5.7.3.3. Relocation operations
      in https://github.com/ARM-software/abi-aa/blob/main/aaelf64/aaelf64.rst#5733relocation-operations .
      To search, remove the "R_AARCH64_" prefix and find the remaining
@@ -2105,6 +2127,16 @@ let term_of_relocs_arm, assert_relocs =
     curry mk_comb
       (vsubst [sym,`v:num`; mk_small_numeral addend,`addend:num`;
                mk_small_numeral pcofs,`i:num`] reloc_BL)
+      next_instbytes in
+
+  (* R_AARCH64_JUMP26. The addend is signed (S + A - P), so it is an
+     integer here; assemblers emit negative addends for `b sym-4`. *)
+  let reloc_B = `APPEND (bytelist_of_num 4
+      (encode_B ((&v + addend) - &(pc + i))))` in
+  let append_reloc_B (sym,addend,pcofs: term*int*int) next_instbytes =
+    curry mk_comb
+      (vsubst [sym,`v:num`; mk_intconst (num addend),`addend:int`;
+               mk_small_numeral pcofs,`i:num`] reloc_B)
       next_instbytes in
 
   (* R_AARCH64_ADR_PREL_LO21 *)
@@ -2152,6 +2184,26 @@ let term_of_relocs_arm, assert_relocs =
          sym,`sym:num`; mk_small_numeral addend,`addend:num`] reloc_ADD_rri64)
         next_instbytes in
 
+  (* consume_word: check that tm[0..3] is n in little endian & increment pc *)
+  let assert_word n (pc,tm) = pc+4, dest_cons4 n tm in
+  let assert_reloc_maker append_reloc_fn arg (pc,code) =
+    (* code is `APPEND (the symbolic expression for opcode) (next insts)`. *)
+    let reloc_opcode, next_insns = dest_comb code in
+    try
+      (* Reproduce the symbolic opcode using the append_reloc fn and
+         compare whether it is syntactically equal to the already
+         embedded one *)
+      let lhs, _ = dest_comb (append_reloc_fn arg next_insns) in
+      let _ = if not (lhs = reloc_opcode) then
+       (Printf.eprintf "assertion failed: symbolic opcodes are not equal\n";
+        Printf.eprintf "  actual opcode: `%s`\n" (string_of_term reloc_opcode);
+        Printf.eprintf "  asserting opcode: `%s`\n" (string_of_term lhs);
+        Printf.eprintf "  PC: %d (0x%x)\n" pc pc;
+        failwith "assert_reloc_maker")
+      in
+      pc+4, next_insns
+    with Failure _ -> failwith ("could not check opcode " ^ (string_of_term reloc_opcode)) in
+
   ((* term_of_relocs_arm *)
    term_of_relocs (fun bstext,ty,pcoffset,sym,addend -> 4,
     let opcode = get_int_le bstext pcoffset 4 in
@@ -2159,6 +2211,11 @@ let term_of_relocs_arm, assert_relocs =
       if opcode = 0x94000000 (* BL with zero immediate *)
       then append_reloc_BL (sym,addend,pcoffset)
       else failwith "Cannot apply R_AARCH64_CALL26"
+
+    else if ty = Arm_jump26 then
+      if opcode = 0x14000000 (* B with zero immediate *)
+      then append_reloc_B (sym,addend,pcoffset)
+      else failwith "Cannot apply R_AARCH64_JUMP26"
 
     else if ty = Arm_adr_prel_lo21 then
       if opcode land 0x9FFFFFE0 = 0x10000000 (* ADR with zero imm. *)
@@ -2181,26 +2238,6 @@ let term_of_relocs_arm, assert_relocs =
     else failwith "unsupported relocation kind")),
 
   ((* assert_relocs *)
-   (* consume_word: check that tm[0..3] is n in little endian & increment pc *)
-    let assert_word n (pc,tm) = pc+4, dest_cons4 n tm in
-    let assert_reloc_maker append_reloc_fn arg (pc,code) =
-      (* code is `APPEND (the symbolic expression for opcode) (next insts)`. *)
-      let reloc_opcode, next_insns = dest_comb code in
-      try
-        (* Reproduce the symbolic opcode using the append_reloc fn and
-           compare whether it is syntactically equal to the already
-           embedded one *)
-        let lhs, _ = dest_comb (append_reloc_fn arg next_insns) in
-        let _ = if not (lhs = reloc_opcode) then
-         (Printf.eprintf "assertion failed: symbolic opcodes are not equal\n";
-          Printf.eprintf "  actual opcode: `%s`\n" (string_of_term reloc_opcode);
-          Printf.eprintf "  asserting opcode: `%s`\n" (string_of_term lhs);
-          Printf.eprintf "  PC: %d (0x%x)\n" pc pc;
-          failwith "assert_reloc_maker")
-        in
-        pc+4, next_insns
-      with Failure _ -> failwith ("could not check opcode " ^ (string_of_term reloc_opcode)) in
-
     (* opcode_fn is the large OCaml function printed by
        print_literal_relocs_from_elf *)
     fun (args,tm) opcode_fn ->
@@ -2217,7 +2254,13 @@ let term_of_relocs_arm, assert_relocs =
         | _,Const("NIL",_) -> ()
         | _ -> failwith "assert_relocs"
       else failwith "assert_relocs";
-      (args,tm));;
+      (args,tm)),
+
+  ((* B_JUMP26 checks a B instruction with an R_AARCH64_JUMP26 relocation.
+      It is a global value rather than a parameter of the function printed
+      by print_literal_relocs_from_elf, so that the existing five-parameter
+      literals keep working. *)
+   assert_reloc_maker append_reloc_B);;
 
 let define_assert_relocs name (tm:term list * term) printed_opcodes_fn
     (constants:(string * bytes) list)

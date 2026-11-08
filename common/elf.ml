@@ -625,6 +625,7 @@ type x86_reloc =
 type arm_reloc =
   | Arm_condbr19 (* conditional branches *)
   | Arm_call26 (* BL *)
+  | Arm_jump26 (* B *)
   | Arm_adr_prel_lo21 (* ADR *)
   | Arm_adr_prel_pg_hi21 (* ADRP; this is ARM64_RELOC_PAGE21 in Mach-O *)
   | Arm_add_abs_lo12_nc (* ADD; this is ARM64_RELOC_PAGEOFF12 in Mach-O  *);;
@@ -645,6 +646,14 @@ let load_elf_x86 (bs:bytes) =
       (* See the full list from:
          https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf *)
       | 2 (* R_X86_64_PC32 *) -> X86_64_pc32
+      (* R_X86_64_PLT32 is L + A - P, where L is the address of the
+         symbol's PLT entry. Assemblers emit it for calls and jumps to
+         global symbols. When the linker resolves the branch directly to
+         the symbol (a static link, or a symbol that cannot be preempted),
+         L = S and this is the R_X86_64_PC32 value S + A - P. So the
+         symbol's address variable stands for the branch target the linker
+         chooses. *)
+      | 4 (* R_X86_64_PLT32 *) -> X86_64_pc32
       | n -> failwith (sprintf "unexpected relocation type: %d" n))
       bs;;
 
@@ -668,6 +677,7 @@ let load_elf_arm (bs:bytes):
       | 275 (* R_AARCH64_ADR_PREL_PG_HI21  *) -> Arm_adr_prel_pg_hi21
       | 277 (* R_AARCH64_ADD_ABS_LO12_NC  *) -> Arm_add_abs_lo12_nc
       | 280 (* R_AARCH64_CONDBR19 *) -> Arm_condbr19
+      | 282 (* R_AARCH64_JUMP26 *) -> Arm_jump26
       | 283 (* R_AARCH64_CALL26 *) -> Arm_call26
       | n -> failwith (sprintf "unexpected relocation type: %d" n))
       bs;;

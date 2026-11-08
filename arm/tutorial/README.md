@@ -16,6 +16,7 @@ To verify programs in x86, see `x86/tutorial`.
 8. `safety.ml`: Verify the safety property (constant-time and and memory-safe)
 9. `aes_encrypt.ml`: Verifying a simple AES encryption program.
 10. `aes_decrypt.ml`: Verifying a simple AES decryption program.
+11. `relocs_branch.ml`: Loading an object whose code calls a function with BL and tail-calls another with B (R_AARCH64_CALL26 and R_AARCH64_JUMP26 relocations).
 
 ### Relational reasoning
 
