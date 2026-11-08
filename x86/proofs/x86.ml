@@ -4751,6 +4751,7 @@ let X86_OPERATION_CLAUSES =
     INST_TYPE[`:32`,`:N`] x86_ADCX;
     INST_TYPE[`:32`,`:N`] x86_ADOX;
     INST_TYPE[`:32`,`:N`] x86_ADD;
+    INST_TYPE[`:8`,`:N`] x86_ADD;
     INST_TYPE[`:32`,`:N`] x86_CMP;
     INST_TYPE[`:8`,`:N`] x86_CMP;
     INST_TYPE[`:32`,`:N`] x86_SBB;
