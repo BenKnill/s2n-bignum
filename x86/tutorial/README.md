@@ -14,6 +14,7 @@ To verify programs in Arm, see `arm/tutorial`.
 6. `bignum.ml`: Writing a specification of a program dealing with big numbers & proving it.
 7. `safety.ml`: Verify the safety property (constant-time and and memory-safe)
 8. `byte_add_cmp.ml`: Verifying a subroutine that uses 8-bit ADD and CMP on memory and registers.
+9. `relocs_call.ml`: Loading an object whose code calls and jumps to other functions (R_X86_64_PLT32 relocations).
 
 ### Relational reasoning
 
