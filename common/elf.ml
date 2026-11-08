@@ -8,15 +8,28 @@
 (* ========================================================================= *)
 
 (*** get int from bs[a:a+n-1] (little-endian). Fail if the resulting
-     integer is too large to fit in OCaml int type (63 bits) ***)
+     integer is too large to fit in OCaml int type (63 bits, so the
+     largest non-negative value is 2^62 - 1). The check reads the top
+     byte of the field, bs[a+7]. ***)
 let get_int_le (bs:bytes) a n =
   if n > 8 then failwith "get_int_le: n too big" else
-  if n = 8 && Char.code (Bytes.get bs 7) >= 128
+  if n = 8 && Char.code (Bytes.get bs (a+7)) >= 64
   then failwith "get_int_le: does not fit in OCaml int (63 bits)" else
   let rec fn a n =
     if n = 0 then 0 else
     Char.code (Bytes.get bs a) lor (fn (a+1) (n-1) lsl 8)
   in fn a n;;
+
+(*** get a two's complement signed int from bs[a:a+n-1] (little-endian).
+     Fail if the value is outside the OCaml int range [-2^62, 2^62 - 1]
+     instead of wrapping it modulo 2^63. ***)
+let get_signed_int_le (bs:bytes) a n =
+  if n < 1 || n > 8 then failwith "get_signed_int_le: bad n" else
+  let top = Char.code (Bytes.get bs (a+n-1)) in
+  if n = 8 && top >= 64 && top < 192
+  then failwith "get_signed_int_le: does not fit in OCaml int (63 bits)" else
+  let high = if top >= 128 then top - 256 else top in
+  (high lsl (8 * (n-1))) lor (get_int_le bs a (n-1));;
 
 (*** load the whole file at path f ***)
 let load_file (f:string): bytes =
@@ -204,8 +217,8 @@ let load_elf (arch:int) (reloc_type:int -> 'a) (file:bytes):
               = ".rodata"
            then "WHOLE_READONLY"
            else symbol_name symtab_idx),
-          (* r_addend. Assume that this value is *)
-          get_int_le file (off + 0x10) 8)) ::
+          (* r_addend (Elf64_Sxword, signed), read exactly or rejected *)
+          get_signed_int_le file (off + 0x10) 8)) ::
       relocs (off + 0x18) in
     relocs rel_pos;;
 

@@ -15,6 +15,7 @@ To verify programs in Arm, see `arm/tutorial`.
 7. `safety.ml`: Verify the safety property (constant-time and and memory-safe)
 8. `byte_add_cmp.ml`: Verifying a subroutine that uses 8-bit ADD and CMP on memory and registers.
 9. `relocs_call.ml`: Loading an object whose code calls and jumps to other functions (R_X86_64_PLT32 relocations).
+10. `elf_addend.ml`: Reading 64-bit integer fields, such as a relocation's signed addend, from an ELF object.
 
 ### Relational reasoning
 
