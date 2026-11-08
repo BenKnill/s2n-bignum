@@ -97,6 +97,11 @@ elf_addend_check "get_int_le reads 2^62 - 1 exactly"
   (get_int_le (Bytes.of_string "\xff\xff\xff\xff\xff\xff\xff\x3f") 0 8 =
    max_int);;
 
+(* 2^62 has the top bit clear but does not fit in a non-negative OCaml int. *)
+elf_addend_check "get_int_le rejects 2^62"
+  (can (get_int_le (Bytes.of_string "\x00\x00\x00\x00\x00\x00\x00\x40") 0) 8
+   = false);;
+
 if !elf_addend_failures <> [] then
   failwith ("elf_addend: " ^ string_of_int (length !elf_addend_failures) ^
             " check(s) failed");;
