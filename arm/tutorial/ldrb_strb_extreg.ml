@@ -172,3 +172,49 @@ let LDRB_SXTW_CONCRETE = prove
      (\s. read PC s = word (pc + 28) /\ read X3 s = word_zx b)
      (MAYCHANGE [PC; X3] ,, MAYCHANGE [events])`,
   LDRB_STRB_STEP_TAC);;
+
+(* ------------------------------------------------------------------------- *)
+(* The sign boundary of the 32-bit index, with garbage in the upper half:    *)
+(* low half 0x7fffffff, 0x80000000 and 0xffffffff, for SXTW (+2^31-1, -2^31, *)
+(* -1) and UXTW (always non-negative), loads and stores.                     *)
+(* ------------------------------------------------------------------------- *)
+
+let ldrb_strb_boundary_goal (i,ld,rt,rn,rm,xmval,addr) =
+  let pc0 = if i = 0 then "word pc" else Printf.sprintf "word (pc + %d)" (4 * i)
+  and pc1 = Printf.sprintf "word (pc + %d)" (4 * i + 4) in
+  parse_term
+   (if ld then Printf.sprintf
+     "!pc xn b.
+      ensures arm
+       (\\s. aligned_bytes_loaded s (word pc) ldrb_strb_extreg_mc /\\
+            read PC s = %s /\\ read %s s = xn /\\ read %s s = word %s /\\
+            read (memory :> bytes8 (%s)) s = b)
+       (\\s. read PC s = %s /\\ read %s s = word_zx b)
+       (MAYCHANGE [PC; %s] ,, MAYCHANGE [events])"
+     pc0 rn rm xmval addr pc1 rt rt
+    else Printf.sprintf
+     "!pc xn xt.
+      nonoverlapping (%s,1) (word pc,LENGTH ldrb_strb_extreg_mc)
+      ==> ensures arm
+       (\\s. aligned_bytes_loaded s (word pc) ldrb_strb_extreg_mc /\\
+            read PC s = %s /\\ read %s s = xn /\\ read %s s = word %s /\\
+            read %s s = xt)
+       (\\s. read PC s = %s /\\ read (memory :> bytes8 (%s)) s = word_zx xt)
+       (MAYCHANGE [PC] ,, MAYCHANGE [memory :> bytes8 (%s)] ,,
+        MAYCHANGE [events])"
+     addr pc0 rn rm xmval rt pc1 addr addr);;
+
+(* (instruction index, is a load, Rt, Rn, Rm, value of Rm, address) *)
+let LDRB_STRB_BOUNDARY_STEPS = map
+  (fun e -> prove(ldrb_strb_boundary_goal e, LDRB_STRB_STEP_TAC))
+ [6,true,"X3","X4","X5","0xa5a5a5a57fffffff","word_add xn (word 0x7fffffff)";
+  6,true,"X3","X4","X5","0x0000000180000000","word_sub xn (word 0x80000000)";
+  6,true,"X3","X4","X5","0x00000000ffffffff","word_sub xn (word 1)";
+  7,false,"X3","X4","X5","0xa5a5a5a57fffffff","word_add xn (word 0x7fffffff)";
+  7,false,"X3","X4","X5","0x0000000180000000","word_sub xn (word 0x80000000)";
+  7,false,"X3","X4","X5","0x00000000ffffffff","word_sub xn (word 1)";
+  0,true,"X0","X9","X27","0xa5a5a5a57fffffff","word_add xn (word 0x7fffffff)";
+  0,true,"X0","X9","X27","0x0000000180000000","word_add xn (word 0x80000000)";
+  0,true,"X0","X9","X27","0xffffffffffffffff","word_add xn (word 0xffffffff)";
+  3,false,"X28","X22","X27","0x0000000180000000","word_add xn (word 0x80000000)";
+  3,false,"X28","X22","X27","0xffffffffffffffff","word_add xn (word 0xffffffff)"];;
