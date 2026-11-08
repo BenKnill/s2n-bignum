@@ -8,8 +8,8 @@
 
   This also serves as a regression test: X86_OPERATION_CLAUSES must carry
   8-bit instances of x86_ADD and x86_CMP, otherwise symbolic simulation of
-  `add byte ptr [..], dl`, `add al, byte ptr [..]` or
-  `cmp byte ptr [..], dl` gets stuck.
+  `add byte ptr [..], sil`, `add al, byte ptr [..]` or
+  `cmp byte ptr [..], sil` gets stuck.
 ******************************************************************************)
 
 (* Please copy this file to the root directory of s2n-bignum, then
