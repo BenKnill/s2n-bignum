@@ -16,6 +16,7 @@ To verify programs in Arm, see `arm/tutorial`.
 8. `byte_add_cmp.ml`: Verifying a subroutine that uses 8-bit ADD and CMP on memory and registers.
 9. `relocs_call.ml`: Loading an object whose code calls and jumps to other functions (R_X86_64_PLT32 relocations).
 10. `elf_addend.ml`: Reading 64-bit integer fields, such as a relocation's signed addend, from an ELF object.
+11. `byte_ext_regs.ml`: Stepping instructions that use the 8-bit and 16-bit views of r8-r15 (r8b-r15b, r8w-r15w).
 
 ### Relational reasoning
 
