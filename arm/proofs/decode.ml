@@ -2129,12 +2129,13 @@ let term_of_relocs_arm, assert_relocs, B_JUMP26 =
                mk_small_numeral pcofs,`i:num`] reloc_BL)
       next_instbytes in
 
-  (* R_AARCH64_JUMP26 *)
+  (* R_AARCH64_JUMP26. The addend is signed (S + A - P), so it is an
+     integer here; assemblers emit negative addends for `b sym-4`. *)
   let reloc_B = `APPEND (bytelist_of_num 4
-      (encode_B (&(v + addend) - &(pc + i))))` in
+      (encode_B ((&v + addend) - &(pc + i))))` in
   let append_reloc_B (sym,addend,pcofs: term*int*int) next_instbytes =
     curry mk_comb
-      (vsubst [sym,`v:num`; mk_small_numeral addend,`addend:num`;
+      (vsubst [sym,`v:num`; mk_intconst (num addend),`addend:int`;
                mk_small_numeral pcofs,`i:num`] reloc_B)
       next_instbytes in
 
