@@ -1695,6 +1695,9 @@ let simple_memory_iclasses = iclasses_simplemem @
   [0xc5; 0xed; 0xf8; 0x0c; 0x24]; (* VPSUBB (%_% ymm1) (%_% ymm2) (Memop Word256 (%% (rsp,0))) *)
   [0xc5; 0xe9; 0xf8; 0x0c; 0x24]; (* VPSUBB (%_% xmm1) (%_% xmm2) (Memop Word128 (%% (rsp,0))) *)
   [0x80; 0x3c; 0x24; 0x00]; (* CMP (Memop Byte (%% (rsp,0))) (Imm8 (word 0)) *)
+  [0x00; 0x0c; 0x24]; (* ADD (Memop Byte (%% (rsp,0))) (% cl) *)
+  [0x02; 0x0c; 0x24]; (* ADD (% cl) (Memop Byte (%% (rsp,0))) *)
+  [0x80; 0x04; 0x24; 0x05]; (* ADD (Memop Byte (%% (rsp,0))) (Imm8 (word 5)) *)
 ];;
 
 let simplemem_iclasses =
