@@ -319,6 +319,14 @@ let movz_Xn_imm rd imm =
   pow2 5 */ num(imm mod 65536) +/
   num rd;;
 
+(*** MOVK Xd, #imm, LSL #(16 * hw): replaces one 16-bit field of Xd ***)
+
+let movk_Xn_imm rd imm hw =
+  pow2 23 */ num_of_string "0b111100101" +/
+  pow2 21 */ num hw +/
+  pow2 5 */ num(imm mod 65536) +/
+  num rd;;
+
 (*** This covers scalar (32-bit or 64-bit) and simd (128-bit only)
  *** LDR and STR with either a register or shifted register offset,
  *** but no non-trivial register extensions, only UXTX.
@@ -493,31 +501,46 @@ let cosimulate_ldst_1_2reg() =
     [add_Xn_SP_imm rn stackoff] @ setoffset @
     [code; sub_Xn_SP_Xn rn];;
 
-(*** This covers LDRB and STRB with unshifted register
- *** There are several more supported addressing modes to cover.
+(*** This covers LDRB and STRB (register) with every defined option:
+ *** LSL (011) and SXTX (111) with a 64-bit Xm, UXTW (010) and SXTW (110)
+ *** with Wm, each with S either 0 or 1 (for bytes S leaves the shift at 0).
+ *** For UXTW and SXTW two MOVKs set only the low 32 bits of Xm, so its upper
+ *** half keeps the random input value. SXTW also tests offsets below the
+ *** base; every access stays in [SP,SP+255].
  ***)
 
 let cosimulate_ldstrb() =
   let rn = Random.int 32
-  and isld = Random.int 2 in
+  and isld = Random.int 2
+  and option = el (Random.int 4) [0b010; 0b011; 0b110; 0b111]
+  and sbit = Random.int 2 in
   let rm = (rn + 1 + Random.int 31) mod 32
   and rt = (rn + 1 + Random.int 31) mod 32 in
   let stackoff =
     if rn = 31 then Random.int 15 * 16
     else Random.int 256 in
-  let regoff = Random.int (256-stackoff) in
+  let regoff =
+    if option = 0b110 then Random.int 256 - stackoff
+    else Random.int (256-stackoff) in
+  let setoff =
+    if option = 0b010 || option = 0b110 then
+      let lo32 = if regoff < 0 then 4294967296 + regoff else regoff in
+      [movk_Xn_imm rm (lo32 mod 65536) 0; movk_Xn_imm rm (lo32 / 65536) 1]
+    else [movz_Xn_imm rm regoff] in
   let code =
     pow2 23 */ num 0b001110000 +/
     pow2 22 */ num isld +/
     pow2 21 +/
     pow2 16 */ num rm +/
-    pow2 10 */ num 0b011010 +/
+    pow2 13 */ num option +/
+    pow2 12 */ num sbit +/
+    pow2 10 */ num 0b10 +/
     pow2 5 */ num rn +/
     num rt in
   if rn = 31 then
-    [add_Xn_SP_imm 31 stackoff; movz_Xn_imm rm regoff; code; sub_Xn_SP_imm 31 stackoff]
+    [add_Xn_SP_imm 31 stackoff] @ setoff @ [code; sub_Xn_SP_imm 31 stackoff]
   else
-    [add_Xn_SP_imm rn stackoff; movz_Xn_imm rm regoff; code; sub_Xn_SP_Xn rn];;
+    [add_Xn_SP_imm rn stackoff] @ setoff @ [code; sub_Xn_SP_Xn rn];;
 
 (*** This covers LDURB/STURB, and LDUR/STUR for 64-bit and 32-bit values ***)
 let cosimulate_ldstu() =

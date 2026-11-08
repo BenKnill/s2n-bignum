@@ -248,6 +248,20 @@ let READ_EXTENDEDREG_CLAUSES = prove
    read (Extendedreg Rn SXTX) s = word_sx (word_zx (read Rn s):int64)`,
   REWRITE_TAC[Extendedreg_DEF; read; extendreg_operation; ETA_AX]);;
 
+(*** Extended-register offsets (LDRB/STRB with UXTW or SXTW). These are tried
+ *** before OFFSET_ADDRESS_CLAUSES so the address comes out as base plus
+ *** word(val ..) or iword(ival ..) of the low 32 bits, a form that
+ *** NONOVERLAPPING_TAC can reason about.
+ ***)
+
+let OFFSET_ADDRESS_EXTENDEDREG_CLAUSES = prove
+ (`offset_address (Register_Offset (Extendedreg r UXTW)) s =
+   word(val(word_zx (read r s):int32)) /\
+   offset_address (Register_Offset (Extendedreg r SXTW)) s =
+   iword(ival(word_zx (read r s):int32))`,
+  REWRITE_TAC[offset_address; READ_EXTENDEDREG_CLAUSES] THEN
+  REWRITE_TAC[word_zx; word_sx]);;
+
 let READ_LANE_CLAUSES = prove
  (`read (Rn :> LANE_B i) (s:armstate) =
    word_duplicate(word_subword (read Rn s:int128) (8*i,8):byte) /\
@@ -268,6 +282,7 @@ let ARM_EXEC_CONV =
    (`word_add (x:(N)word) (iword (-- &n)) =
      word_sub x (word n)`, CONV_TAC WORD_RULE) in
   ((GEN_REWRITE_CONV I ARM_LOAD_STORE_CLAUSES THENC
+    REWRITE_CONV [OFFSET_ADDRESS_EXTENDEDREG_CLAUSES] THENC
     REWRITE_CONV [offset_writesback; offset_writeback;
                   no_offset; OFFSET_ADDRESS_CLAUSES] THENC
     ONCE_DEPTH_CONV(EQT_INTRO o ORTHOGONAL_COMPONENTS_CONV) THENC
@@ -358,6 +373,36 @@ let is_read_pc = is_read_named_component "PC";;
 (* returns true if t is `read events <state>`. *)
 let is_read_events = is_read_named_component "events";;
 
+(*** Once the index register of an extended-register offset (see
+ *** OFFSET_ADDRESS_EXTENDEDREG_CLAUSES) has a numeral value, evaluate the
+ *** extension so the address becomes base + word k or base - word k, which
+ *** NORMALIZE_RELATIVE_ADDRESS_CONV and the memory tactics already handle.
+ *** It fails on any other term, so other addresses are left alone.
+ ***)
+
+let EXTENDEDREG_OFFSET_REDUCE_CONV =
+  let pat_u = `word_add (x:int64) (word(val(word_zx(word n:int64):int32)))`
+  and pat_s = `word_add (x:int64) (iword(ival(word_zx(word n:int64):int32)))`
+  and add_tm = `word_add:int64->int64->int64`
+  and sub_tm = `word_sub:int64->int64->int64`
+  and word_tm = `word:num->int64`
+  and neg_th = WORD_RULE `word_sub (x:int64) y = word_add x (word_neg y)` in
+  fun tm ->
+    let signed = can (term_match [] pat_s) tm in
+    if not (signed || can (term_match [] pat_u) tm) ||
+       not (is_numeral (funpow 5 rand tm))
+    then failwith "EXTENDEDREG_OFFSET_REDUCE_CONV" else
+    let lo = mod_num (dest_numeral (funpow 5 rand tm)) (pow2 32) in
+    let tm' =
+      if signed && lo >=/ pow2 31
+      then mk_comb(mk_comb(sub_tm,lhand tm),mk_comb(word_tm,mk_numeral(pow2 32 -/ lo)))
+      else mk_comb(mk_comb(add_tm,lhand tm),mk_comb(word_tm,mk_numeral lo)) in
+    let th1 = RAND_CONV WORD_REDUCE_CONV tm in
+    if rhs(concl th1) = tm' then th1 else
+    let th2 = CONV_RULE (RAND_CONV(RAND_CONV WORD_REDUCE_CONV))
+                (INST [lhand tm',`x:int64`; rand tm',`y:int64`] neg_th) in
+    TRANS th1 (SYM th2);;
+
 (*** decode_ths is an array from int offset i to
  ***   Some `|- !s pc. aligned_bytes_loaded s pc *_mc
  ***            ==> arm_decode s (word (pc+i)) (..inst..)`
@@ -424,6 +469,7 @@ let ARM_CONV (decode_ths:thm option array) (ths:thm list) tm =
     RAND_CONV NUM_REDUCE_CONV) THENC
   TOP_DEPTH_CONV COMPONENT_WRITE_OVER_WRITE_CONV THENC
   GEN_REWRITE_CONV (SUB_COMPONENTS_CONV o TOP_DEPTH_CONV) ths THENC
+  ONCE_DEPTH_CONV EXTENDEDREG_OFFSET_REDUCE_CONV THENC
   GEN_REWRITE_CONV TOP_DEPTH_CONV [WORD_VAL] THENC
   ONCE_DEPTH_CONV WORD_PC_PLUS_CONV THENC
   ONCE_DEPTH_CONV NORMALIZE_RELATIVE_ADDRESS_CONV THENC
