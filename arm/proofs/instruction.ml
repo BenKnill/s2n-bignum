@@ -654,7 +654,10 @@ let CONDITION_SEMANTICS_INVERT_CONDITION = prove
 (* ------------------------------------------------------------------------- *)
 
 (*** We don't support quite all the addressing modes in C1.3.3.
- *** In particular we ignore extended 32-bit registers, which we'll never use
+ *** There is no separate offset form for extended registers. Where the decoder
+ *** accepts one (so far only LDRB/STRB, whose shift amount is always 0) it
+ *** uses Register_Offset (Extendedreg (XREG' Rm) UXTW) or the SXTW analogue,
+ *** which reads as ExtendReg(Rm, extend_type, 0, 64) in the Arm ARM.
  ***
  *** We have a numeric parameter in the Shiftreg_Offset but it's only
  *** allowed to be log_2(transfer_size), i.e. usually 3. We also just treat all
