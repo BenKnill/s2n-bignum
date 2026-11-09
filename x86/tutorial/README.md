@@ -13,6 +13,7 @@ To verify programs in Arm, see `arm/tutorial`.
 5. `loop.ml`: Verifying a program that has a simple loop.
 6. `bignum.ml`: Writing a specification of a program dealing with big numbers & proving it.
 7. `safety.ml`: Verify the safety property (constant-time and and memory-safe)
+8. `byte_ext_regs.ml`: Stepping instructions that use the 8-bit and 16-bit views of r8-r15 (r8b-r15b, r8w-r15w).
 
 ### Relational reasoning
 
