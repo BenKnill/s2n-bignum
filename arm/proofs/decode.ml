@@ -319,9 +319,20 @@ let decode = new_definition `!w:int32. decode w =
     SOME (arm_ldstb ld Rt (XREG_SP Rn) (Preimmediate_Offset (word_sx imm9)))
   | [0b001110010:9; ld; imm12:12; Rn:5; Rt:5] ->
     SOME (arm_ldstb ld Rt (XREG_SP Rn) (Immediate_Offset (word_zx imm12)))
-    // LDRB/STRB shifted register, no shift: option:011 S:0
-  | [0b001110000:9; ld; 0b1:1; Rm:5; 0b011010:6; Rn:5; Rt:5] ->
-    SOME (arm_ldstb ld Rt (XREG_SP Rn) (Register_Offset (XREG' Rm)))
+    // LDRB/STRB (register). The offset is ExtendReg(Rm, option, 0, 64); for
+    // byte accesses the shift amount is 0 whether S is 0 or 1. option<1> = 0
+    // is UNDEFINED. option 011 (LSL) and 111 (SXTX) both give X[Rm] unchanged;
+    // 010 (UXTW) and 110 (SXTW) zero- or sign-extend the low 32 bits of X[Rm].
+  | [0b001110000:9; ld; 0b1:1; Rm:5; option:3; S; 0b10:2; Rn:5; Rt:5] ->
+    if option = word 0b011 \/ option = word 0b111 then
+      SOME (arm_ldstb ld Rt (XREG_SP Rn) (Register_Offset (XREG' Rm)))
+    else if option = word 0b010 then
+      SOME (arm_ldstb ld Rt (XREG_SP Rn)
+              (Register_Offset (Extendedreg (XREG' Rm) UXTW)))
+    else if option = word 0b110 then
+      SOME (arm_ldstb ld Rt (XREG_SP Rn)
+              (Register_Offset (Extendedreg (XREG' Rm) SXTW)))
+    else NONE
 
   | [x; 0b010100:6; pre; 0b1:1; ld; imm7:7; Rt2:5; Rn:5; Rt:5] ->
     SOME (arm_ldstp ld x Rt Rt2 (XREG_SP Rn)
